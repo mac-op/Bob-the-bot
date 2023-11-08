@@ -20,7 +20,6 @@ private:
 	const Unit* FindNearestMineralPatch(const Point2D& start);
 	int numSCVs = 12;
 	int numDepots = 0;
-	
 };
 
 #endif

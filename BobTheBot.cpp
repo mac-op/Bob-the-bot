@@ -2,7 +2,6 @@
 
 void BobTheBot::OnGameStart() {
 	Actions()->SendChat("Bob the Bot\nCan we fix it ?\nBob the Bot\nYes, we can!!");
-	return; 
 }
 
 
@@ -13,24 +12,31 @@ void BobTheBot::OnStep() {
             numDepots += 1;
         }
     }
-	return;
 }
 
 
 void BobTheBot::OnUnitIdle(const Unit* unit) {
     switch (unit->unit_type.ToType()) {
 
-    case UNIT_TYPEID::TERRAN_SCV: {
-        const Unit* mineral_target = FindNearestMineralPatch(unit->pos);
-        if (!mineral_target) {
+        case UNIT_TYPEID::TERRAN_SCV: {
+            const Unit* mineral_target = FindNearestMineralPatch(unit->pos);
+            if (!mineral_target) {
+                break;
+            }
+            Actions()->UnitCommand(unit, ABILITY_ID::SMART, mineral_target);
             break;
         }
-        Actions()->UnitCommand(unit, ABILITY_ID::SMART, mineral_target);
-        break;
-    }
-    default: {
-        break;
-    }
+        // always training new Marines
+        case UNIT_TYPEID::TERRAN_BARRACKS: {
+            Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_MARINE);
+        }
+        // always training new SCVs
+        case UNIT_TYPEID::TERRAN_COMMANDCENTER: {
+            Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_SCV);
+        }
+        default: {
+            break;
+        }
     }
 }
 
