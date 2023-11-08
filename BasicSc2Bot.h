@@ -14,10 +14,13 @@ public:
 	virtual void OnGameStart();
 	virtual void OnStep();
 	virtual void OnUnitIdle(const Unit* unit);
-	bool TryBuildSupplyDepot();
 
 private:
 	bool TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_TYPEID unit_type = UNIT_TYPEID::TERRAN_SCV);
+	const Unit* FindNearestMineralPatch(const Point2D& start);
+	int numSCVs = 12;
+	int numDepots = 0;
+	
 };
 
 #endif
