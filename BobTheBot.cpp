@@ -17,24 +17,27 @@ void BobTheBot::OnStep() {
 
 void BobTheBot::OnUnitIdle(const Unit* unit) {
     switch (unit->unit_type.ToType()) {
-    case UNIT_TYPEID::TERRAN_COMMANDCENTER: {
-        const ObservationInterface* observation = Observation();
-        // If we have enough minerals and supply
-        if ((observation->GetMinerals() >= 50) && (observation->GetFoodUsed() < observation->GetFoodCap()))
-            Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_SCV);
-        break;
-    }
-    case UNIT_TYPEID::TERRAN_SCV: {
-        const Unit* mineral_target = FindNearestMineralPatch(unit->pos);
-        if (!mineral_target) {
+        case UNIT_TYPEID::TERRAN_COMMANDCENTER: {
+            const ObservationInterface* observation = Observation();
+            // If we have enough minerals and supply
+            if ((observation->GetMinerals() >= 50) && (observation->GetFoodUsed() < observation->GetFoodCap()))
+                Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_SCV);
             break;
         }
-        Actions()->UnitCommand(unit, ABILITY_ID::SMART, mineral_target);
-        break;
-    }
-    default: {
-        break;
-    }
+        case UNIT_TYPEID::TERRAN_BARRACKS: {
+            Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_MARINE);
+        }
+        case UNIT_TYPEID::TERRAN_SCV: {
+            const Unit* mineral_target = FindNearestMineralPatch(unit->pos);
+            if (!mineral_target) {
+                break;
+            }
+            Actions()->UnitCommand(unit, ABILITY_ID::SMART, mineral_target);
+            break;
+        }
+        default: {
+            break;
+        }
     }
 }
 
@@ -100,15 +103,17 @@ void BobTheBot::OnBuildingConstructionComplete(const Unit* unit)
 {
     switch (unit->unit_type.ToType()) {
     // Immediately start building more SCVS when he have space
-    case UNIT_TYPEID::TERRAN_SUPPLYDEPOT: {
-        const ObservationInterface* observation = Observation();
-        Units commandCenters = observation->GetUnits(Unit::Alliance::Self, isCommandCenter);
-        for (auto commandCenter: commandCenters) {
-            // If we have enough minerals and supply
-            if (observation->GetMinerals() >= 50 && (observation->GetFoodUsed() < observation->GetFoodCap()))
-                Actions()->UnitCommand(commandCenter, ABILITY_ID::TRAIN_SCV);
+        case UNIT_TYPEID::TERRAN_SUPPLYDEPOT: {
+            const ObservationInterface* observation = Observation();
+            Units commandCenters = observation->GetUnits(Unit::Alliance::Self, isCommandCenter);
+            for (auto commandCenter: commandCenters) {
+                // If we have enough minerals and supply
+                if (observation->GetMinerals() >= 50 && (observation->GetFoodUsed() < observation->GetFoodCap()))
+                    Actions()->UnitCommand(commandCenter, ABILITY_ID::TRAIN_SCV);
+            }
+            break;
         }
-        break;
-    }
+        default:
+            break;
     }
 }
