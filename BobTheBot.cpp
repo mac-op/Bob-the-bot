@@ -1,12 +1,12 @@
-#include "BasicSc2Bot.h"
+#include "BobTheBot.h"
 
-void BasicSc2Bot::OnGameStart() {
+void BobTheBot::OnGameStart() {
 	Actions()->SendChat("Bob the Bot\nCan we fix it ?\nBob the Bot\nYes, we can!!");
 	return; 
 }
 
 
-void BasicSc2Bot::OnStep() {
+void BobTheBot::OnStep() {
     size_t mineralCount = Observation()->GetMinerals();
     if (numDepots < 1 && mineralCount >= 100) {
         if (TryBuildStructure(ABILITY_ID::BUILD_SUPPLYDEPOT)) {
@@ -17,7 +17,7 @@ void BasicSc2Bot::OnStep() {
 }
 
 
-void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
+void BobTheBot::OnUnitIdle(const Unit* unit) {
     switch (unit->unit_type.ToType()) {
 
     case UNIT_TYPEID::TERRAN_SCV: {
@@ -35,7 +35,7 @@ void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
 }
 
 
-const Unit* BasicSc2Bot::FindNearestMineralPatch(const Point2D& start) {
+const Unit* BobTheBot::FindNearestMineralPatch(const Point2D& start) {
     Units units = Observation()->GetUnits(Unit::Alliance::Neutral);
     float distance = std::numeric_limits<float>::max();
     const Unit* target = nullptr;
@@ -52,7 +52,7 @@ const Unit* BasicSc2Bot::FindNearestMineralPatch(const Point2D& start) {
 }
 
 
-bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_TYPEID unit_type)
+bool BobTheBot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_TYPEID unit_type)
 {
     const ObservationInterface* observation = Observation();
     // If a unit already is building a supply structure of this type, do nothing.

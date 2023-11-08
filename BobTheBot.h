@@ -9,7 +9,7 @@
 
 using namespace sc2;
 
-class BasicSc2Bot : public sc2::Agent {
+class BobTheBot : public sc2::Agent {
 public:
 	virtual void OnGameStart();
 	virtual void OnStep();
