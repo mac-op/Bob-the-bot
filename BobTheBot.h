@@ -16,14 +16,21 @@ public:
 	virtual void OnStep();
 	virtual void OnUnitIdle(const Unit* unit);
 	virtual void OnBuildingConstructionComplete(const Unit* unit);
+	const Unit* getAvailableSCV();
+	void BobTheBot::freeSCV(const Unit* scv);
 
 private:
 	bool TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_TYPEID unit_type = UNIT_TYPEID::TERRAN_SCV);
 	const Unit* FindNearestMineralPatch(const Point2D& start);
+    bool TryBuildStructure(ABILITY_ID ability_type_for_structure);
+	const Unit* FindNearest(const Point2D& start, UNIT_TYPEID type);
 
     Strategy::ResourceManager resourceManager {*this};
+    Units availableSCVs;
 	int numSCVs = 12;
 	int numDepots = 0;
+	int numBarracks = 0;
+	int numRefineries = 0;
 };
 
 #endif
