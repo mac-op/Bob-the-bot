@@ -143,7 +143,8 @@ static void RunBot(int argc, char *argv[], sc2::Agent *Agent, sc2::Race race)
 	ParseArguments(argc, argv, Options);
 
 	sc2::Coordinator coordinator;
-
+    coordinator.SetFullScreen(true);
+    coordinator.SetRealtime(true);
 	int num_agents;
 	if (Options.ComputerOpponent) {
 		num_agents = 1;

@@ -6,8 +6,10 @@ void BobTheBot::OnGameStart() {
 
 
 void BobTheBot::OnStep() {
+    // TODO: Migrate logic to manager
+    //resourceManager.Step();
     size_t mineralCount = Observation()->GetMinerals();
-    if (numDepots < 1 && mineralCount >= 100) {
+    if (numDepots < 4 && mineralCount >= 100) {
         if (TryBuildStructure(ABILITY_ID::BUILD_SUPPLYDEPOT)) {
             numDepots += 1;
         }
