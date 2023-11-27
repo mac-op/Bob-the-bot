@@ -15,14 +15,14 @@ public:
 	virtual void OnStep();
 	virtual void OnUnitIdle(const Unit* unit);
 	virtual void OnBuildingConstructionComplete(const Unit* unit);
+	void SupplyDepotManager(int sensitivity);
 	const Unit* getAvailableSCV();
-	void BobTheBot::freeSCV(const Unit* scv);
+	bool MineMinerals(const Unit* scv);
 
 
 private:
 	bool TryBuildStructure(ABILITY_ID ability_type_for_structure);
 	const Unit* FindNearest(const Point2D& start, UNIT_TYPEID type);
-	Units availableSCVs;
 	int numSCVs = 12;
 	int numDepots = 0;
 	int numBarracks = 0;
