@@ -6,27 +6,39 @@
 #include "sc2lib/sc2_lib.h"
 #include "sc2utils/sc2_manage_process.h"
 #include "sc2utils/sc2_arg_parser.h"
+#include "ResourceManager.h"
 
 using namespace sc2;
 
 class BobTheBot : public sc2::Agent {
 public:
+	// API-Provided functions
 	virtual void OnGameStart();
 	virtual void OnStep();
 	virtual void OnUnitIdle(const Unit* unit);
 	virtual void OnBuildingConstructionComplete(const Unit* unit);
-	void SupplyDepotManager(int sensitivity);
-	const Unit* getAvailableSCV();
-	bool MineMinerals(const Unit* scv);
-
 
 private:
+	// Game state
+	const ObservationInterface* observer = Observation();
+	ActionInterface* actions = Actions();
+
+	// Bot managers
+	void ContinuousSCVSpawn(int leeway);
+	void SupplyDepotManager(int sensitivity);
+	bool MineMinerals(const Unit* scv);
+
+	// Helpers
 	bool TryBuildStructure(ABILITY_ID ability_type_for_structure);
 	const Unit* FindNearest(const Point2D& start, UNIT_TYPEID type);
-	int numSCVs = 12;
-	int numDepots = 0;
-	int numBarracks = 0;
-	int numRefineries = 0;
+	const Unit* getAvailableSCV();
+
+	// Filters
+	static bool isCommandCenter(const Unit& unit) { return unit.unit_type == UNIT_TYPEID::TERRAN_COMMANDCENTER; }
+	static bool isSCV(const Unit& unit) { return unit.unit_type == UNIT_TYPEID::TERRAN_SCV; }
+
+    Strategy::ResourceManager resourceManager {*this};
+    Units availableSCVs;
 };
 
 #endif

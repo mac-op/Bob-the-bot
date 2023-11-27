@@ -1,23 +1,8 @@
 #include "BobTheBot.h"
 
-bool depotBuilding = false;
-
-const ObservationInterface* observer;
-ActionInterface* actions;
-
-bool isCommandCenter(const Unit& unit)
-{
-    return unit.unit_type == UNIT_TYPEID::TERRAN_COMMANDCENTER;
-}
-
-
-bool isSCV(const Unit& unit)
-{
-    return unit.unit_type == UNIT_TYPEID::TERRAN_SCV;
-}
-
-
+bool depotBuilding = false; // Helps keep of a depot thats being built, so we dont accidentally build multiple at a time
 void BobTheBot::SupplyDepotManager(int sensitivity) {
+    // Sensitivity is how close we need to get to the supply cap before building a new supply depot
     const ObservationInterface* observation = Observation();
 
     size_t mineralCount = observation->GetMinerals();
@@ -26,7 +11,6 @@ void BobTheBot::SupplyDepotManager(int sensitivity) {
     bool shouldBuildDepot = !depotBuilding && (mineralCount >= 100) && (supplyLeft <= sensitivity);
     if (shouldBuildDepot) {
         if (TryBuildStructure(ABILITY_ID::BUILD_SUPPLYDEPOT)) {
-            numDepots += 1;
             depotBuilding = true;
         }
     }
@@ -43,7 +27,7 @@ bool BobTheBot::MineMinerals(const Unit* scv) {
 }
 
 
-void ContinuousSCVSpawn(int leeway) {
+void BobTheBot::ContinuousSCVSpawn(int leeway) {
     // leeway is how much space we should reserve for other units when we are nearing the supply limit
     const Units commandCenters = observer->GetUnits(Unit::Alliance::Self, isCommandCenter);
     for (const Unit* commandCenter : commandCenters)
@@ -59,9 +43,6 @@ void ContinuousSCVSpawn(int leeway) {
 
 void BobTheBot::OnGameStart() {
 	Actions()->SendChat("\nBob the Bot\nCan we fix it ?\nBob the Bot\nYes, we can!!");
-    
-    observer = Observation();
-    actions = Actions();
 }
 
 
