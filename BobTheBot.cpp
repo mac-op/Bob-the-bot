@@ -49,6 +49,9 @@ void BobTheBot::OnGameStart() {
 void BobTheBot::OnStep() {
     SupplyDepotManager(7);
     ContinuousSCVSpawn(2);
+
+    bool canUpgradeCommandCen = observer->GetMinerals()
+    if (observer->GetMinerals() && )
 }
 
 
@@ -157,7 +160,7 @@ const Unit* BobTheBot::FindNearest(const Point2D& start, UNIT_TYPEID type) {
 const Unit* BobTheBot::getAvailableSCV() {
     Units allSCVs = Observation()->GetUnits(Unit::Alliance::Self, isSCV);
     for (const Unit* scv : allSCVs) {
-        if ((scv->orders).size() == 1) {
+        if ((scv->orders).size() <= 1) {    // If the scv is either doing nothing or mining
             return scv;
         }
     }
