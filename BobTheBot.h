@@ -6,11 +6,10 @@
 #include "sc2lib/sc2_lib.h"
 #include "sc2utils/sc2_manage_process.h"
 #include "sc2utils/sc2_arg_parser.h"
-#include "ResourceManager.h"
-
+#include "sc2api/sc2_unit_filters.h"
 using namespace sc2;
 
-class BobTheBot : public sc2::Agent {
+class BobTheBot : public Agent {
 public:
 	// API-Provided functions
 	virtual void OnGameStart();
@@ -34,11 +33,15 @@ private:
 	const Unit* getAvailableSCV();
 
 	// Filters
-	static bool isCommandCenter(const Unit& unit) { return unit.unit_type == UNIT_TYPEID::TERRAN_COMMANDCENTER; }
-	static bool isSCV(const Unit& unit) { return unit.unit_type == UNIT_TYPEID::TERRAN_SCV; }
+    // TODO: Remove this bc we don't need these anymore (check out IsUnit functor)
+//	static bool isCommandCenter(const Unit& unit) { return unit.unit_type == UNIT_TYPEID::TERRAN_COMMANDCENTER; }
+//	static bool isSCV(const Unit& unit) { return unit.unit_type == UNIT_TYPEID::TERRAN_SCV; }
 
-    Strategy::ResourceManager resourceManager {*this};
-    Units availableSCVs;
+    size_t CountUnitType(UNIT_TYPEID unit_type) {
+        return Observation()->GetUnits(Unit::Alliance::Self, IsUnit(unit_type)).size();
+    }
+
+    void ManageBarracks(int maxBarracks);
 };
 
 #endif

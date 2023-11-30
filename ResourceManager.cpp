@@ -29,7 +29,7 @@ bool BobTheBot::MineMinerals(const Unit* scv) {
 
 void BobTheBot::ContinuousSCVSpawn(int leeway) {
     // leeway is how much space we should reserve for other units when we are nearing the supply limit
-    const Units commandCenters = observer->GetUnits(Unit::Alliance::Self, isCommandCenter);
+    const Units commandCenters = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_COMMANDCENTER));
     for (const Unit* commandCenter : commandCenters)
     {
         bool enoughMinerals = observer->GetMinerals() > 50;
@@ -49,26 +49,27 @@ void BobTheBot::OnGameStart() {
 void BobTheBot::OnStep() {
     SupplyDepotManager(7);
     ContinuousSCVSpawn(2);
-
-    bool canUpgradeCommandCen = observer->GetMinerals()
-    if (observer->GetMinerals() && )
+    ManageBarracks(1);
 }
 
 
 void BobTheBot::OnUnitIdle(const Unit* unit) {
-    const ObservationInterface* observation = Observation();
-    ActionInterface* actions = Actions();
-
     switch (unit->unit_type.ToType()) {
         case UNIT_TYPEID::TERRAN_BARRACKS: {
             Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_MARINE);
             break;
         }
-
         case UNIT_TYPEID::TERRAN_SCV: {
             MineMinerals(unit);
             break;
         }
+        case UNIT_TYPEID::TERRAN_MARINE: {
+            // TODO
+            const GameInfo& game_info = Observation()->GetGameInfo();
+            Actions()->UnitCommand(unit, ABILITY_ID::ATTACK_ATTACK, game_info.enemy_start_locations.front());
+            break;
+        }
+
         default: {
             break;
         }
@@ -144,7 +145,7 @@ const Unit* BobTheBot::FindNearest(const Point2D& start, UNIT_TYPEID type) {
     Units units = Observation()->GetUnits(Unit::Alliance::Neutral);
     float distance = std::numeric_limits<float>::max();
     const Unit* target = nullptr;
-    for (const auto& u : units) {
+    for (auto u : units) {
         if (u->unit_type == type) {
             float d = DistanceSquared2D(u->pos, start);
             if (d < distance) {
@@ -158,7 +159,7 @@ const Unit* BobTheBot::FindNearest(const Point2D& start, UNIT_TYPEID type) {
 
 
 const Unit* BobTheBot::getAvailableSCV() {
-    Units allSCVs = Observation()->GetUnits(Unit::Alliance::Self, isSCV);
+    Units allSCVs = Observation()->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_SCV));
     for (const Unit* scv : allSCVs) {
         if ((scv->orders).size() <= 1) {    // If the scv is either doing nothing or mining
             return scv;
