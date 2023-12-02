@@ -32,16 +32,24 @@ private:
 	const Unit* FindNearest(const Point2D& start, UNIT_TYPEID type);
 	const Unit* getAvailableSCV();
 
-	// Filters
-    // TODO: Remove this bc we don't need these anymore (check out IsUnit functor)
-//	static bool isCommandCenter(const Unit& unit) { return unit.unit_type == UNIT_TYPEID::TERRAN_COMMANDCENTER; }
-//	static bool isSCV(const Unit& unit) { return unit.unit_type == UNIT_TYPEID::TERRAN_SCV; }
-
     size_t CountUnitType(UNIT_TYPEID unit_type) {
-        return Observation()->GetUnits(Unit::Alliance::Self, IsUnit(unit_type)).size();
+        return observer->GetUnits(Unit::Alliance::Self, IsUnit(unit_type)).size();
     }
 
     void ManageBarracks(int maxBarracks);
+
+    void Scout();
+    const Unit *GetRandomUnit(UnitTypeID unit_type);
+
+    GameInfo gameInfo;
+
+    bool FindEnemyPosition(Point2D &target_pos);
+
+    bool FindRandomLocation(const Unit *unit, Point2D &target_pos);
+
+    void AttackWithUnit(const Unit *unit);
+
+    void ManageOffensive();
 };
 
 #endif

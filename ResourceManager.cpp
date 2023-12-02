@@ -42,6 +42,7 @@ void BobTheBot::ContinuousSCVSpawn(int leeway) {
 
 
 void BobTheBot::OnGameStart() {
+    gameInfo = observer->GetGameInfo();
 	Actions()->SendChat("\nBob the Bot\nCan we fix it ?\nBob the Bot\nYes, we can!!");
 }
 
@@ -49,7 +50,7 @@ void BobTheBot::OnGameStart() {
 void BobTheBot::OnStep() {
     SupplyDepotManager(7);
     ContinuousSCVSpawn(2);
-    ManageBarracks(1);
+    ManageOffensive();
 }
 
 
@@ -63,13 +64,12 @@ void BobTheBot::OnUnitIdle(const Unit* unit) {
             MineMinerals(unit);
             break;
         }
-        case UNIT_TYPEID::TERRAN_MARINE: {
-            // TODO
-            const GameInfo& game_info = Observation()->GetGameInfo();
-            Actions()->UnitCommand(unit, ABILITY_ID::ATTACK_ATTACK, game_info.enemy_start_locations.front());
-            break;
-        }
-
+//        case UNIT_TYPEID::TERRAN_MARINE: {
+//            // TODO
+//            const GameInfo& game_info = observer->GetGameInfo();
+//            actions->UnitCommand(unit, ABILITY_ID::ATTACK_ATTACK, game_info.enemy_start_locations.front());
+//            break;
+//        }
         default: {
             break;
         }

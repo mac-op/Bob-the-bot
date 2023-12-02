@@ -53,12 +53,15 @@ if (NOT APPLE)
 endif ()
 
 
-file(GLOB SOURCES_BOBBOT "*.cpp" "*.h")
+file(GLOB SOURCES_BOBBOT "*.cpp" "*.h"
+        "cpp-sc2/examples/common/*.h"
+        "cpp-sc2/examples/common/*.cc")
 # Include directories
 include_directories(SYSTEM
     ${PROJECT_SOURCE_DIR}/cpp-sc2/include
     ${PROJECT_SOURCE_DIR}/cpp-sc2/contrib/protobuf/src
     ${PROJECT_BINARY_DIR}/cpp-sc2/generated
+    ${PROJECT_SOURCE_DIR}/cpp-sc2/examples/common
 )
 
 # Create the executable.
