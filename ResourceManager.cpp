@@ -9,7 +9,7 @@ void BobTheBot::SupplyDepotManager(int sensitivity) {
 
     bool shouldBuildDepot = !depotBuilding && (mineralCount >= 100) && (supplyLeft <= sensitivity);
     if (shouldBuildDepot) {
-        if (TryBuildStructure(ABILITY_ID::BUILD_SUPPLYDEPOT, initialCommCen->pos)) {
+        if (TryBuildStructure(ABILITY_ID::BUILD_SUPPLYDEPOT, latestCommCen->pos)) {
             depotBuilding = true;
         }
     }
@@ -17,8 +17,8 @@ void BobTheBot::SupplyDepotManager(int sensitivity) {
 
 bool commandCenterBuilding = false;
 void BobTheBot::CommandCenterManager() {
-    if (observer->GetMinerals() > 400 && expansionLocations.size() > 0 && !commandCenterBuilding) {
-        commandCenterBuilding = true;
+    if (observer->GetMinerals() > 500 && expansionLocations.size() > 0 && !commandCenterBuilding) {
+        //commandCenterBuilding = true;
         Point3D closestLocation = expansionLocations.back();
         expansionLocations.pop_back();
         if (closestLocation.x == 0 && closestLocation.y == 0)
@@ -29,7 +29,7 @@ void BobTheBot::CommandCenterManager() {
 
 
 bool BobTheBot::MineMinerals(const Unit* scv) {
-    const Unit* mineral_target = FindNearest(scv->pos, isMineralField);
+    const Unit* mineral_target = FindNearest(scv->pos, UNIT_TYPEID::NEUTRAL_MINERALFIELD);
     if (!mineral_target) {
         return false;
     }
@@ -54,6 +54,7 @@ void BobTheBot::ContinuousSCVSpawn(int leeway) {
 
 
 void BobTheBot::RefineryManager() {
+    // Build new refineries, if possible
     bool enoughMinerals = observer->GetMinerals() > 75;
     bool enoughSpace = observer->GetFoodCap() > observer->GetFoodUsed();
     if (geysersToBuildOn.size() > 0 && enoughMinerals && enoughSpace) {
@@ -61,7 +62,6 @@ void BobTheBot::RefineryManager() {
         geysersToBuildOn.pop_back();
     }
 }
-
 
 
 // Comparison function for sorting based on distance to a given point
@@ -76,13 +76,12 @@ void BobTheBot::getExpansionLocations() {
     ep.debug_ = d;
     expansionLocations = search::CalculateExpansionLocations(observer, query, ep);
     d->SendDebug();
-    initialCommCen = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_COMMANDCENTER))[0];
-    Point3D initialCommCenLocation(initialCommCen->pos.x, initialCommCen->pos.y, initialCommCen->pos.z);
-
+    
+    Point3D refPoint = observer->GetStartLocation();
     // Sorting the vector based on distance to the initial command center
     sort(expansionLocations.begin(), expansionLocations.end(),
-         [&initialCommCenLocation, this](const Point3D& p1, const Point3D& p2) {
-                    return compareDistance(p1, p2, initialCommCenLocation);
+         [&refPoint, this](const Point3D& p1, const Point3D& p2) {
+                    return compareDistance(p1, p2, refPoint);
                }
     );
 }
@@ -114,6 +113,7 @@ bool BobTheBot::TryBuildStructure(ABILITY_ID ability_type_for_structure, Point2D
 {
     const Unit* unit_to_build = getAvailableSCV();
     if (!unit_to_build) {
+        std::cout << "out" << std::endl;
         return false;
     }
 
@@ -154,9 +154,18 @@ void BobTheBot::OnBuildingConstructionComplete(const Unit* unit)
 
     // Immediately start building more SCVS when he have space
     case UNIT_TYPEID::TERRAN_COMMANDCENTER: {
-        geysersToBuildOn.insert(geysersToBuildOn.begin(), FindNearest(unit->pos, isGeyser));
-        geysersToBuildOn.insert(geysersToBuildOn.begin(), FindSecondNearest(unit->pos, isGeyser));
+        geysersToBuildOn.insert(geysersToBuildOn.begin(), FindNearest(unit->pos, UNIT_TYPEID::NEUTRAL_VESPENEGEYSER));
+        geysersToBuildOn.insert(geysersToBuildOn.begin(), FindSecondNearest(unit->pos, UNIT_TYPEID::NEUTRAL_VESPENEGEYSER));
+        latestCommCen = unit;
         commandCenterBuilding = false;
+        break;
+    }
+
+    case UNIT_TYPEID::TERRAN_REFINERY: {
+        const Unit* scv1 = getAvailableSCV();
+        const Unit* scv2 = getAvailableSCV();
+        actions->UnitCommand(scv1, ABILITY_ID::SMART, unit);
+        actions->UnitCommand(scv2, ABILITY_ID::SMART, unit);
         break;
     }
 
@@ -166,8 +175,8 @@ void BobTheBot::OnBuildingConstructionComplete(const Unit* unit)
 }
 
 
-const Unit* BobTheBot::FindNearest(const Point2D& start, bool (*filterType)(const Unit&)) {
-    Units units = observer->GetUnits(Unit::Alliance::Neutral, filterType);
+const Unit* BobTheBot::FindNearest(const Point2D& start, UNIT_TYPEID unitType) {
+    Units units = observer->GetUnits(Unit::Alliance::Neutral, IsUnit(unitType));
     float distance = std::numeric_limits<float>::max();
     const Unit* target = nullptr;
     for (const auto& u : units) {
@@ -181,8 +190,8 @@ const Unit* BobTheBot::FindNearest(const Point2D& start, bool (*filterType)(cons
 }
 
 
-const Unit* BobTheBot::FindSecondNearest(const Point2D& start, bool (*filterType)(const Unit&)) {
-    Units units = observer->GetUnits(Unit::Alliance::Neutral, filterType);
+const Unit* BobTheBot::FindSecondNearest(const Point2D& start, UNIT_TYPEID unitType) {
+    Units units = observer->GetUnits(Unit::Alliance::Neutral, IsUnit(unitType));
     float nearestDistance = std::numeric_limits<float>::max();
     float secondNearestDistance = std::numeric_limits<float>::max();
     const Unit* nearestTarget = nullptr;

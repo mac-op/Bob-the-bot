@@ -6,9 +6,11 @@ void BobTheBot::OnGameStart() {
     // Get all possible locations we can expand to
     getExpansionLocations();
 
+    latestCommCen = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_COMMANDCENTER))[0];
+
     // Add the geysers near the initial command senter to the queue of geysers to build a refinery on
-    geysersToBuildOn.insert(geysersToBuildOn.begin(), FindNearest(initialCommCen->pos, isGeyser));
-    geysersToBuildOn.insert(geysersToBuildOn.begin(), FindSecondNearest(initialCommCen->pos, isGeyser));
+    geysersToBuildOn.insert(geysersToBuildOn.begin(), FindNearest(observer->GetStartLocation(), UNIT_TYPEID::NEUTRAL_VESPENEGEYSER));
+    geysersToBuildOn.insert(geysersToBuildOn.begin(), FindSecondNearest(observer->GetStartLocation(), UNIT_TYPEID::NEUTRAL_VESPENEGEYSER));
 }
 
 
@@ -27,7 +29,7 @@ void BobTheBot::OnStep() {
     ContinuousSCVSpawn(2);
     CommandCenterManager();
     RefineryManager();
-    ManageOffensive();
+    //ManageOffensive();
 }
 
 
