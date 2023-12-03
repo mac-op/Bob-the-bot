@@ -36,7 +36,7 @@ private:
         return observer->GetUnits(Unit::Alliance::Self, IsUnit(unit_type)).size();
     }
 
-    void ManageBarracks(int maxBarracks);
+    void ManageOffensiveStructures();
 
     void Scout();
     const Unit *GetRandomUnit(UnitTypeID unit_type);

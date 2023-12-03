@@ -1,11 +1,32 @@
-#include <iostream>
 #include "BobTheBot.h"
 
-void BobTheBot::ManageBarracks(int maxBarracks) {
-    if (CountUnitType(UNIT_TYPEID::TERRAN_SUPPLYDEPOT) < 1 ||
-        CountUnitType(UNIT_TYPEID::TERRAN_BARRACKS) > maxBarracks)
-    { return; }
-    TryBuildStructure(ABILITY_ID::BUILD_BARRACKS);
+void BobTheBot::ManageOffensiveStructures() {
+    Units bases = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_COMMANDCENTER));
+    Units barracks = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_BARRACKS));
+
+
+    if (CountUnitType(UNIT_TYPEID::TERRAN_SUPPLYDEPOT) > 1 && barracks.size() <= bases.size() * 3) {
+        TryBuildStructure(ABILITY_ID::BUILD_BARRACKS);
+    }
+
+    // Build some advanced structures once barracks are built
+    if (!barracks.empty()){
+        if (CountUnitType(UNIT_TYPEID::TERRAN_ARMORY) < 1){
+            TryBuildStructure(ABILITY_ID::BUILD_ARMORY);
+        }
+        if (CountUnitType(UNIT_TYPEID::TERRAN_GHOSTACADEMY) < 1 &&
+            observer->GetMinerals() > 150 && observer->GetVespene() > 100) {
+            TryBuildStructure(ABILITY_ID::BUILD_GHOSTACADEMY);
+        }
+        if (CountUnitType(UNIT_TYPEID::TERRAN_ENGINEERINGBAY) < 1 &&
+            observer->GetMinerals() > 150 && observer->GetVespene() > 100) {
+            TryBuildStructure(ABILITY_ID::BUILD_ENGINEERINGBAY);
+        }
+        if (CountUnitType(UNIT_TYPEID::TERRAN_FACTORY) < bases.size() * 2 &&
+            observer->GetMinerals() > 150 && observer->GetVespene() > 100) {
+            TryBuildStructure(ABILITY_ID::BUILD_ENGINEERINGBAY);
+        }
+    }
 }
 
 const Unit* BobTheBot::GetRandomUnit(UnitTypeID unit_type) {
@@ -21,7 +42,7 @@ bool BobTheBot::FindEnemyPosition(Point2D& target_pos) {
     if (gameInfo.enemy_start_locations.empty()) {
         return false;
     }
-    target_pos = gameInfo.enemy_start_locations.front();
+    target_pos = GetRandomEntry(gameInfo.enemy_start_locations);
     return true;
 }
 bool BobTheBot::FindRandomLocation(const Unit* unit, Point2D& target_pos) {
@@ -66,7 +87,7 @@ void BobTheBot::AttackWithUnit(const Unit* unit) {
 }
 
 void BobTheBot::ManageOffensive() {
-    ManageBarracks(5);
+    ManageOffensiveStructures();
     Scout();
 
     Units enemies = observer->GetUnits(Unit::Alliance::Enemy);

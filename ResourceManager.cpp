@@ -48,6 +48,16 @@ void BobTheBot::OnGameStart() {
 
 
 void BobTheBot::OnStep() {
+    //Throttle some behavior that can wait to avoid duplicate orders.
+    int frames_to_skip = 4;
+    if (observer->GetFoodUsed() >= observer->GetFoodCap()) {
+        frames_to_skip = 6;
+    }
+
+    if (Observation()->GetGameLoop() % frames_to_skip != 0) {
+        return;
+    }
+
     SupplyDepotManager(7);
     ContinuousSCVSpawn(2);
     ManageOffensive();
@@ -85,7 +95,7 @@ bool BobTheBot::TryBuildStructure(ABILITY_ID ability_type_for_structure)
     }
     Point2D point(unit_to_build->pos.x, unit_to_build->pos.y);
 
-    // Edge case for refineries, you need to provide the nearest geyser
+    // Edge case for refineries
     if (ability_type_for_structure == ABILITY_ID::BUILD_REFINERY) {
         const Unit* nearest_geyser = FindNearest(point, UNIT_TYPEID::NEUTRAL_VESPENEGEYSER);
         Actions()->UnitCommand(unit_to_build, ability_type_for_structure, nearest_geyser);
