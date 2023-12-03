@@ -18,7 +18,7 @@ void BobTheBot::SupplyDepotManager(int sensitivity) {
 
 bool commandCenterBuilding = false;
 void BobTheBot::CommandCenterManager() {
-    if (observer->GetMinerals() > 1150 && expansionLocations.size() > 0 && !commandCenterBuilding) {
+    if (observer->GetMinerals() > 400 && expansionLocations.size() > 0 && !commandCenterBuilding) {
         commandCenterBuilding = true;
         Point3D closestLocation = expansionLocations.back();
         expansionLocations.pop_back();
@@ -46,7 +46,8 @@ void BobTheBot::ContinuousSCVSpawn(int leeway) {
     {
         bool enoughMinerals = observer->GetMinerals() > 50;
         bool enoughSpace = (observer->GetFoodCap() - observer->GetFoodUsed()) > leeway;
-        if (enoughMinerals && enoughSpace) {
+        bool overTraining = (commandCenter->orders).size() > 1; // We only need to queue 1 scv at a time. It doesn't benefit us to train more than 1 and we get to keep more minerals at hand.
+        if (enoughMinerals && enoughSpace && !overTraining) {
             actions->UnitCommand(commandCenter, ABILITY_ID::TRAIN_SCV);
         }
     }
