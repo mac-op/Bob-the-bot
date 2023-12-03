@@ -156,6 +156,11 @@ bool BobTheBot::TryBuildStructure(ABILITY_ID ability_type_for_structure, Point2D
         return false;
     }
 
+    if (location.x == 0 && location.y == 0) {
+        location.x = unit_to_build->pos.x;
+        location.y = unit_to_build->pos.y;
+    }
+
     // Edge case for refineries, you need to provide the nearest geyser
     if (ability_type_for_structure == ABILITY_ID::BUILD_REFINERY) {
         actions->UnitCommand(unit_to_build, ability_type_for_structure, unit_to_build_on);
