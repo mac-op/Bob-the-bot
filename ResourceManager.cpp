@@ -4,7 +4,6 @@
 bool depotBuilding = false; // Helps keep track of a depot thats being built, so we dont accidentally build multiple at a time
 void BobTheBot::SupplyDepotManager(int sensitivity) {
     // Sensitivity is how close we need to get to the supply cap before building a new supply depot
-
     size_t mineralCount = observer->GetMinerals();
     int supplyLeft = observer->GetFoodCap() - observer->GetFoodUsed();
 
@@ -41,7 +40,7 @@ bool BobTheBot::MineMinerals(const Unit* scv) {
 
 void BobTheBot::ContinuousSCVSpawn(int leeway) {
     // leeway is how much space we should reserve for other units when we are nearing the supply limit
-    const Units commandCenters = observer->GetUnits(Unit::Alliance::Self, isCommandCenter);
+    const Units commandCenters = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_COMMANDCENTER));
     for (const Unit* commandCenter : commandCenters)
     {
         bool enoughMinerals = observer->GetMinerals() > 50;
@@ -71,70 +70,21 @@ bool BobTheBot::compareDistance(const Point3D& p1, const Point3D& p2, const Poin
 }
 
 
-std::vector<Point3D> BobTheBot::getExpansionLocations() {
+void BobTheBot::getExpansionLocations() {
     search::ExpansionParameters ep;
     DebugInterface* d = Debug();
     ep.debug_ = d;
-    std::vector<Point3D> locations = search::CalculateExpansionLocations(observer, query, ep);
+    expansionLocations = search::CalculateExpansionLocations(observer, query, ep);
     d->SendDebug();
-    initialCommCen = observer->GetUnits(Unit::Alliance::Self, isCommandCenter)[0];
+    initialCommCen = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_COMMANDCENTER))[0];
     Point3D initialCommCenLocation(initialCommCen->pos.x, initialCommCen->pos.y, initialCommCen->pos.z);
 
     // Sorting the vector based on distance to the initial command center
-    sort(locations.begin(), locations.end(), [&initialCommCenLocation, this](const Point3D& p1, const Point3D& p2) {
-        return compareDistance(p1, p2, initialCommCenLocation);
-        });
-
-    return locations;
-}
-
-
-void BobTheBot::OnGameStart() {
-    actions->SendChat("\nBob the Bot\nCan we fix it ?\nBob the Bot\nYes, we can!!");
-
-    // Get all possible locations we can expand to
-    expansionLocations = getExpansionLocations();
-
-    // Add the geysers near the initial command senter to the queue of geysers to build a refinery on
-    geysersToBuildOn.insert(geysersToBuildOn.begin(), FindNearest(initialCommCen->pos, isGeyser));
-    geysersToBuildOn.insert(geysersToBuildOn.begin(), FindSecondNearest(initialCommCen->pos, isGeyser));
-}
-
-
-void BobTheBot::OnStep() {
-    //Throttle some behavior that can wait to avoid duplicate orders.
-    int frames_to_skip = 4;
-    if (observer->GetFoodUsed() >= observer->GetFoodCap()) {
-        frames_to_skip = 6;
-    }
-
-    if (Observation()->GetGameLoop() % frames_to_skip != 0) {
-        return;
-    }
-
-    SupplyDepotManager(7);
-    ContinuousSCVSpawn(2);
-    CommandCenterManager();
-    RefineryManager();
-    ManageOffensive();
-}
-
-
-void BobTheBot::OnUnitIdle(const Unit* unit) {
-    switch (unit->unit_type.ToType()) {
-    case UNIT_TYPEID::TERRAN_BARRACKS: {
-        actions->UnitCommand(unit, ABILITY_ID::TRAIN_MARINE);
-        break;
-    }
-
-    case UNIT_TYPEID::TERRAN_SCV: {
-        MineMinerals(unit);
-        break;
-    }
-    default: {
-        break;
-    }
-    }
+    sort(expansionLocations.begin(), expansionLocations.end(),
+         [&initialCommCenLocation, this](const Point3D& p1, const Point3D& p2) {
+                    return compareDistance(p1, p2, initialCommCenLocation);
+               }
+    );
 }
 
 
@@ -202,7 +152,7 @@ void BobTheBot::OnBuildingConstructionComplete(const Unit* unit)
         break;
     }
 
-                                        // Immediately start building more SCVS when he have space
+    // Immediately start building more SCVS when he have space
     case UNIT_TYPEID::TERRAN_COMMANDCENTER: {
         geysersToBuildOn.insert(geysersToBuildOn.begin(), FindNearest(unit->pos, isGeyser));
         geysersToBuildOn.insert(geysersToBuildOn.begin(), FindSecondNearest(unit->pos, isGeyser));
@@ -259,7 +209,7 @@ const Unit* BobTheBot::FindSecondNearest(const Point2D& start, bool (*filterType
 
 
 const Unit* BobTheBot::getAvailableSCV() {
-    Units allSCVs = observer->GetUnits(Unit::Alliance::Self, isSCV);
+    Units allSCVs = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_SCV));
     for (const Unit* scv : allSCVs) {
         bool isMining = (scv->orders).size() == 1 && (scv->orders[0].ability_id == ABILITY_ID::HARVEST_GATHER || scv->orders[0].ability_id == ABILITY_ID::HARVEST_RETURN);
         if (isMining) {    // If the scv is either doing nothing or mining

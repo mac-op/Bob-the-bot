@@ -22,6 +22,7 @@ private:
 	const ObservationInterface* observer = Observation();
 	ActionInterface* actions = Actions();
 	QueryInterface* query = Query();
+    GameInfo gameInfo;
 
 	// Bot managers
 	void ContinuousSCVSpawn(int leeway);
@@ -37,15 +38,13 @@ private:
 	const Unit* getAvailableSCV();
 	Point2D getValidNearbyLocation(Point2D location, ABILITY_ID ability_type_for_structure);
 	void sendSCVScout(const Unit* SCV, Point2D location);
-	std::vector<Point3D> getExpansionLocations();
+	void getExpansionLocations();
 	std::vector<Point3D> expansionLocations;
 	std::vector<const Unit*> geysersToBuildOn;
-	bool compareDistance(const Point3D& p1, const Point3D& p2, const Point3D& referencePoint);
+	static bool compareDistance(const Point3D& p1, const Point3D& p2, const Point3D& referencePoint);
 	const Unit* initialCommCen;
 
 	// Filters
-	static bool isCommandCenter(const Unit& unit) { return unit.unit_type == UNIT_TYPEID::TERRAN_COMMANDCENTER; }
-	static bool isSCV(const Unit& unit) { return unit.unit_type == UNIT_TYPEID::TERRAN_SCV; }
 	static bool isMineralField(const Unit& unit) { return unit.unit_type == UNIT_TYPEID::NEUTRAL_MINERALFIELD; }
 	static bool isGeyser(const Unit& unit) { return unit.unit_type == UNIT_TYPEID::NEUTRAL_VESPENEGEYSER; }
 
@@ -57,8 +56,6 @@ private:
 
     void Scout();
     const Unit *GetRandomUnit(UnitTypeID unit_type);
-
-    GameInfo gameInfo;
 
     bool FindEnemyPosition(Point2D &target_pos);
 
