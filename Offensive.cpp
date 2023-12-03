@@ -1,5 +1,11 @@
 #include "BobTheBot.h"
 
+void BobTheBot::ManageBarracks(int maxBarracks) {
+    if (CountUnitType(UNIT_TYPEID::TERRAN_SUPPLYDEPOT) < 1 ||
+        CountUnitType(UNIT_TYPEID::TERRAN_BARRACKS) > maxBarracks)
+    { return; }
+    TryBuildStructure(ABILITY_ID::BUILD_BARRACKS, initialCommCen->pos);
+}
 void BobTheBot::ManageOffensiveStructures() {
     Units bases = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_COMMANDCENTER));
     Units barracks = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_BARRACKS));
