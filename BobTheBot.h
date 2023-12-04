@@ -25,6 +25,10 @@ private:
 	ActionInterface* actions = Actions();
 	QueryInterface* query = Query();
     GameInfo gameInfo;
+    const Unit* latestCommCen;
+    std::vector<Point3D> expansionLocations;
+    std::vector<Point3D> expansionLocationsLeft;
+    std::vector<const Unit*> geysersToBuildOn;
 
 	// Bot managers
 	void ContinuousSCVSpawn(int leeway);
@@ -41,15 +45,7 @@ private:
 	Point2D getValidNearbyLocation(Point2D location, ABILITY_ID ability_type_for_structure);
 	void sendSCVScout(const Unit* SCV, Point2D location);
 	void getExpansionLocations();
-	std::vector<Point3D> expansionLocations;
-	std::vector<Point3D> expansionLocationsLeft;
-	std::vector<const Unit*> geysersToBuildOn;
 	static bool compareDistance(const Point3D& p1, const Point3D& p2, const Point3D& referencePoint);
-	const Unit* latestCommCen;
-
-    size_t CountUnitType(UNIT_TYPEID unit_type) {
-        return observer->GetUnits(Unit::Alliance::Self, IsUnit(unit_type)).size();
-    }
 
     void ManageOffensiveStructures();
 

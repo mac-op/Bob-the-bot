@@ -4,8 +4,11 @@ void BobTheBot::ManageOffensiveStructures() {
     Units bases = observer->GetUnits(Unit::Alliance::Self, IsTownHall());
     Units barracks = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_BARRACKS));
     Units factories = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_FACTORY));
+    Units depots = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_SUPPLYDEPOT));
+    Units armory = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_ARMORY));
+    Units engBay = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_ENGINEERINGBAY));
 
-    if (CountUnitType(UNIT_TYPEID::TERRAN_SUPPLYDEPOT) > 1 && barracks.size() <= bases.size() * 3) {
+    if (depots.size() > 1 && barracks.size() <= bases.size() * 3) {
         if (observer->GetMinerals() > 150)
             if (TryBuildStructure(ABILITY_ID::BUILD_BARRACKS)) return;
     }
@@ -26,10 +29,10 @@ void BobTheBot::ManageOffensiveStructures() {
     uint32_t gas = observer->GetVespene();
     // Build some advanced structures once barracks are built
     if (!barracks.empty()){
-        if (CountUnitType(UNIT_TYPEID::TERRAN_ARMORY) < 1 && !factories.empty() && minerals >= 200){
+        if (armory.size() < 1 && !factories.empty() && minerals >= 200){
             if (TryBuildStructure(ABILITY_ID::BUILD_ARMORY)) return;
         }
-        if (CountUnitType(UNIT_TYPEID::TERRAN_ENGINEERINGBAY) < 1 && minerals > 150 && gas > 100) {
+        if (engBay.size() < 1 && minerals > 150 && gas > 100) {
             if (TryBuildStructure(ABILITY_ID::BUILD_ENGINEERINGBAY)) return;
         }
         if (factories.size() < bases.size() && minerals > 200 && gas > 100) {
@@ -98,12 +101,12 @@ void BobTheBot::ManageOffensive() {
 //    Scout();
 
     Units enemies = observer->GetUnits(Unit::Alliance::Enemy);
-    if (!enemies.empty()) {
-        Units marines = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_MARINE));
-        for (auto marine: marines) {
-            AttackWithUnit(marine);
-        }
-    }
+//    if (!enemies.empty()) {
+//        Units marines = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_MARINE));
+//        for (auto marine: marines) {
+//            AttackWithUnit(marine);
+//        }
+//    }
     Units bases = observer->GetUnits(Unit::Alliance::Self, IsTownHall());
     Units barracks = observer->GetUnits(Unit::Alliance::Self, IsUnits({UNIT_TYPEID::TERRAN_BARRACKS, UNIT_TYPEID::TERRAN_BARRACKSREACTOR}));
     Units factories = observer->GetUnits(Unit::Alliance::Self, IsUnits({UNIT_TYPEID::TERRAN_FACTORY, UNIT_TYPEID::TERRAN_FACTORYTECHLAB}));
