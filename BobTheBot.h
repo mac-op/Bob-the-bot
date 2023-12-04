@@ -63,6 +63,10 @@ private:
     void AttackWithUnit(const Unit *unit);
 
     void ManageOffensive();
+
+    void BuildAddOn(ABILITY_ID ability, const Unit *unit);
+
+    void UpgradeArmy();
 };
 
 #endif
