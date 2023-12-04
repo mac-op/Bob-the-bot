@@ -18,7 +18,7 @@ void BobTheBot::SupplyDepotManager(int sensitivity) {
 
 bool commandCenterBuilding = false;
 void BobTheBot::CommandCenterManager() {
-    if (observer->GetMinerals() > 600 && expansionLocations.size() > 0 && !commandCenterBuilding) {
+    if (observer->GetMinerals() > 400 && expansionLocations.size() > 0 && !commandCenterBuilding) {
         //commandCenterBuilding = true;
         Point3D closestLocation = expansionLocations.back();
         if (closestLocation.x == 0 && closestLocation.y == 0) {
@@ -228,10 +228,16 @@ void BobTheBot::OnUnitDestroyed(const Unit* unit) {
     
     case UNIT_TYPEID::TERRAN_COMMANDCENTER: {
         expansionLocations.insert(expansionLocations.begin(), unit->pos);
+        Units army = observer->GetUnits(Unit::Alliance::Self, IsUnits(armyTypes));
+        for (auto fighter : army) {
+            actions->UnitCommand(fighter, ABILITY_ID::SMART, unit->pos);
+        }
+        break;
     }
 
     case UNIT_TYPEID::TERRAN_REFINERY: {
         geysersToBuildOn.insert(geysersToBuildOn.begin(), FindNearest(unit->pos, UNIT_TYPEID::NEUTRAL_VESPENEGEYSER));
+        break;
     }
 
     default:

@@ -32,10 +32,7 @@ void BobTheBot::OnStep() {
     } else{
         ContinuousSCVSpawn(2);
     }
-
-    if (observer->GetFoodArmy() < bases.size() * 25){
-        ManageOffensive();
-    }
+    ManageOffensive();
 
     RefineryManager();
     CommandCenterManager();
