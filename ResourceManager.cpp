@@ -35,7 +35,15 @@ void BobTheBot::CommandCenterManager() {
     const Units commandCenters = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_COMMANDCENTER));
     for (auto commandCenter : commandCenters) {
         if (observer->GetMinerals() > 150) {
-            Actions()->UnitCommand(commandCenter, ABILITY_ID::MORPH_ORBITALCOMMAND);
+            actions->UnitCommand(commandCenter, ABILITY_ID::MORPH_ORBITALCOMMAND);
+        }
+    }
+
+    const Units orbitalCommands = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_ORBITALCOMMAND));
+    for (auto orbitalCommand : orbitalCommands) {
+        if (orbitalCommand->energy > 50) {
+            const Unit* mineral_target = FindNearest(orbitalCommand->pos, UNIT_TYPEID::NEUTRAL_MINERALFIELD);
+            actions->UnitCommand(orbitalCommand, ABILITY_ID::EFFECT_CALLDOWNMULE, mineral_target);
         }
     }
 }
