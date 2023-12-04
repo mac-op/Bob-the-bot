@@ -122,8 +122,8 @@ Point2D BobTheBot::getValidNearbyLocation(Point2D location, ABILITY_ID ability_t
     {
         rx = GetRandomScalar();
         ry = GetRandomScalar();
-        approxLocation.x = location.x + rx * 15.0f;
-        approxLocation.y = location.y + ry * 15.0f;
+        approxLocation.x = location.x + rx * 25.0f;
+        approxLocation.y = location.y + ry * 25.0f;
         ++attempts;
     }
 
