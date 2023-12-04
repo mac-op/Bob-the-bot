@@ -1,5 +1,7 @@
 #include "BobTheBot.h"
 #include <iostream>
+#include <algorithm>
+#include <random>
 
 bool depotBuilding = false; // Helps keep track of a depot thats being built, so we dont accidentally build multiple at a time
 void BobTheBot::SupplyDepotManager(int sensitivity) {
@@ -20,10 +22,20 @@ void BobTheBot::CommandCenterManager() {
     if (observer->GetMinerals() > 500 && expansionLocations.size() > 0 && !commandCenterBuilding) {
         //commandCenterBuilding = true;
         Point3D closestLocation = expansionLocations.back();
-        expansionLocations.pop_back();
-        if (closestLocation.x == 0 && closestLocation.y == 0)
+        if (closestLocation.x == 0 && closestLocation.y == 0) {
+            expansionLocations.pop_back();
             return;
-        TryBuildStructure(ABILITY_ID::BUILD_COMMANDCENTER, closestLocation);
+        }
+        if (TryBuildStructure(ABILITY_ID::BUILD_COMMANDCENTER, closestLocation)) {
+            expansionLocations.pop_back();
+        }
+    }
+
+    const Units commandCenters = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_COMMANDCENTER));
+    for (auto commandCenter : commandCenters) {
+        if (observer->GetMinerals() > 150) {
+            Actions()->UnitCommand(commandCenter, ABILITY_ID::MORPH_ORBITALCOMMAND);
+        }
     }
 }
 
@@ -44,7 +56,7 @@ void BobTheBot::ContinuousSCVSpawn(int leeway) {
     for (const Unit* commandCenter : commandCenters)
     {
         bool enoughMinerals = observer->GetMinerals() > 50;
-        bool enoughSpace = (observer->GetFoodCap() - observer->GetFoodUsed()) > leeway;
+        bool enoughSpace = ((observer->GetFoodCap() - observer->GetFoodUsed()) > leeway) && (commandCenter->assigned_harvesters < commandCenter->ideal_harvesters);
         bool overTraining = (commandCenter->orders).size() > 1; // We only need to queue 1 scv at a time. It doesn't benefit us to train more than 1 and we get to keep more minerals at hand.
         if (enoughMinerals && enoughSpace && !overTraining) {
             actions->UnitCommand(commandCenter, ABILITY_ID::TRAIN_SCV);
@@ -60,6 +72,14 @@ void BobTheBot::RefineryManager() {
     if (geysersToBuildOn.size() > 0 && enoughMinerals && enoughSpace) {
         TryBuildStructure(ABILITY_ID::BUILD_REFINERY, Point2D(0, 0), geysersToBuildOn.back());
         geysersToBuildOn.pop_back();
+    }
+
+    const Units refineries = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_REFINERY));
+    for (auto refinery : refineries) {
+        if (refinery->assigned_harvesters < refinery->ideal_harvesters) {
+            const Unit* scv = getAvailableSCV();
+            actions->UnitCommand(scv, ABILITY_ID::SMART, refinery);
+        }
     }
 }
 
@@ -106,6 +126,11 @@ Point2D BobTheBot::getValidNearbyLocation(Point2D location, ABILITY_ID ability_t
         ++attempts;
     }
 
+    // No valid location found
+    if (!query->Placement(ability_type_for_structure, approxLocation)) {
+        return Point2D(-1, -1);
+    }
+
     return approxLocation;
 }
 
@@ -113,7 +138,6 @@ bool BobTheBot::TryBuildStructure(ABILITY_ID ability_type_for_structure, Point2D
 {
     const Unit* unit_to_build = getAvailableSCV();
     if (!unit_to_build) {
-        std::cout << "out" << std::endl;
         return false;
     }
 
@@ -133,8 +157,11 @@ bool BobTheBot::TryBuildStructure(ABILITY_ID ability_type_for_structure, Point2D
             sendSCVScout(unit_to_build, location);
         }
 
-        // Find the closest valid position to build on
+        // Find the closest valid position to build on (returns (-1, -1) if none found)
         Point2D approxLocation = getValidNearbyLocation(location, ability_type_for_structure);
+        if (approxLocation.x == -1) {
+            return false;
+        }
         actions->UnitCommand(unit_to_build, ability_type_for_structure, approxLocation);
     }
 
@@ -146,7 +173,7 @@ void BobTheBot::OnBuildingConstructionComplete(const Unit* unit)
 {
     switch (unit->unit_type.ToType()) {
 
-        // Immediately start building more SCVS when he have space
+    // Immediately start building more SCVS when he have space
     case UNIT_TYPEID::TERRAN_SUPPLYDEPOT: {
         depotBuilding = false;
         break;
@@ -167,6 +194,23 @@ void BobTheBot::OnBuildingConstructionComplete(const Unit* unit)
         actions->UnitCommand(scv1, ABILITY_ID::SMART, unit);
         actions->UnitCommand(scv2, ABILITY_ID::SMART, unit);
         break;
+    }
+
+    default:
+        break;
+    }
+}
+
+
+void BobTheBot::OnUnitDestroyed(const Unit* unit) {
+    switch (unit->unit_type.ToType()) {
+    
+    case UNIT_TYPEID::TERRAN_COMMANDCENTER: {
+        expansionLocations.insert(expansionLocations.begin(), unit->pos);
+    }
+
+    case UNIT_TYPEID::TERRAN_REFINERY: {
+        geysersToBuildOn.insert(geysersToBuildOn.begin(), FindNearest(unit->pos, UNIT_TYPEID::NEUTRAL_VESPENEGEYSER));
     }
 
     default:
@@ -219,6 +263,12 @@ const Unit* BobTheBot::FindSecondNearest(const Point2D& start, UNIT_TYPEID unitT
 
 const Unit* BobTheBot::getAvailableSCV() {
     Units allSCVs = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_SCV));
+    // Use a random seed for shuffling
+    std::random_device rd;
+    std::mt19937 g(rd());
+    // Shuffle the SCVs randomly
+    std::shuffle(allSCVs.begin(), allSCVs.end(), g);
+
     for (const Unit* scv : allSCVs) {
         bool isMining = (scv->orders).size() == 1 && (scv->orders[0].ability_id == ABILITY_ID::HARVEST_GATHER || scv->orders[0].ability_id == ABILITY_ID::HARVEST_RETURN);
         if (isMining) {    // If the scv is either doing nothing or mining

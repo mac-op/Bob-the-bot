@@ -16,6 +16,8 @@ public:
 	virtual void OnStep();
 	virtual void OnUnitIdle(const Unit* unit);
 	virtual void OnBuildingConstructionComplete(const Unit* unit);
+	virtual void OnUnitDestroyed(const Unit* unit);
+
 
 private:
 	// Game state
@@ -40,6 +42,7 @@ private:
 	void sendSCVScout(const Unit* SCV, Point2D location);
 	void getExpansionLocations();
 	std::vector<Point3D> expansionLocations;
+	std::vector<Point3D> expansionLocationsLeft;
 	std::vector<const Unit*> geysersToBuildOn;
 	static bool compareDistance(const Point3D& p1, const Point3D& p2, const Point3D& referencePoint);
 	const Unit* latestCommCen;
