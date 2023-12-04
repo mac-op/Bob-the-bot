@@ -100,7 +100,10 @@ void BobTheBot::AttackWithUnit(const Unit* unit) {
 }
 
 void BobTheBot::ManageOffensive() {
-    BuildArmy();
+    Units bases = observer->GetUnits(Unit::Alliance::Self, IsTownHall());
+    if (observer->GetFoodArmy() < bases.size() * 25) {
+        BuildArmy();
+    }
     ManageOffensiveStructures();
 
     UpgradeArmy();
@@ -124,7 +127,7 @@ void BobTheBot::BuildArmy() {
 
     for (auto factory : factories) {
         if (Observation()->GetUnit(factory->add_on_tag) == nullptr) {
-            if (!factory->orders.empty() || hellions.size() >= 2 * factories.size() || minerals < 100) continue;
+            if (!factory->orders.empty() || hellions.size() >= 3 * factories.size() || minerals < 100) continue;
             if (!armories.empty()) {
                 actions->UnitCommand(factory, ABILITY_ID::TRAIN_HELLBAT);
             } else {
@@ -133,14 +136,14 @@ void BobTheBot::BuildArmy() {
         } else {            // Factory with Tech Lab
             if (!factory->orders.empty()) continue;
 
-            if (tanks.size() < 5) {
+            if (tanks.size() < 6) {
                 actions->UnitCommand(factory, ABILITY_ID::TRAIN_SIEGETANK);
             }
-            if (thors.size() < 4) {
+            if (thors.size() < 5) {
                 actions->UnitCommand(factory, ABILITY_ID::TRAIN_THOR);
             }
 
-            if (!armories.empty() || hellions.size() < 2 * factories.size()) {
+            if (!armories.empty() || hellions.size() < 3 * factories.size()) {
                 if (minerals >= 100)
                     actions->UnitCommand(factory, ABILITY_ID::TRAIN_HELLION);
             }
@@ -186,14 +189,10 @@ void BobTheBot::Attack() {
  * Build addon for a given structure
  */
 void BobTheBot::BuildAddOn(ABILITY_ID ability, const Unit *unit) {
-    float rx = GetRandomScalar();
-    float ry = GetRandomScalar();
-
     if (unit->build_progress != 1) return;
 
-    Point2D location = Point2D(unit->pos.x + rx * 10, unit->pos.y + ry * 10);
-    if (query->Placement(ability, location, unit)) {
-        actions->UnitCommand(unit, ability, location);
+    if (query->Placement(ability, unit->pos, unit)) {
+        actions->UnitCommand(unit, ability, unit->pos);
     }
 }
 
@@ -218,7 +217,7 @@ void BobTheBot::UpgradeArmy() {
         }
     }
 
-    if (!armory.empty()) {
+    if (!armory.empty() && !upgrades.empty()) {
         if (std::find(upgrades.begin(), upgrades.end(), UPGRADE_ID::TERRANVEHICLEARMORSLEVEL3) == upgrades.end()) {
             if (bases.size() >= upgrades.size() / 2) {
                 actions->UnitCommand(armory, ABILITY_ID::RESEARCH_TERRANVEHICLEANDSHIPPLATING, true);
@@ -244,17 +243,6 @@ void BobTheBot::Scout() {
     Point2D target_pos;
 
     if (FindEnemyPosition(target_pos)) {
-        if (Distance2D(unit->pos, target_pos) < 20 && enemy_units.empty()) {
-            if (FindRandomLocation(unit, target_pos)) {
-                Actions()->UnitCommand(unit, ABILITY_ID::SMART, target_pos);
-                return;
-            }
-        }
-        else if (!enemy_units.empty())
-        {
-            Actions()->UnitCommand(unit, ABILITY_ID::ATTACK, enemy_units.front());
-            return;
-        }
         Actions()->UnitCommand(unit, ABILITY_ID::SMART, target_pos);
     }
     else {

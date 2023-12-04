@@ -227,11 +227,18 @@ void BobTheBot::OnUnitDestroyed(const Unit* unit) {
     switch (unit->unit_type.ToType()) {
     
     case UNIT_TYPEID::TERRAN_COMMANDCENTER: {
+        expansionLocations.insert(expansionLocations.begin(), unit->pos);
+        Units army = observer->GetUnits(Unit::Alliance::Self, IsUnits(armyTypes));
+        for (auto fighter : army) {
+            actions->UnitCommand(fighter, ABILITY_ID::SMART, unit->pos);
+        }
+        break;
         expansionLocations.push_back(unit->pos);
     }
 
     case UNIT_TYPEID::TERRAN_REFINERY: {
         geysersToBuildOn.insert(geysersToBuildOn.begin(), FindNearest(unit->pos, UNIT_TYPEID::NEUTRAL_VESPENEGEYSER));
+        break;
     }
 
     default:
