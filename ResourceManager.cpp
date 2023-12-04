@@ -11,7 +11,7 @@ void BobTheBot::SupplyDepotManager(int sensitivity) {
 
     bool shouldBuildDepot = !depotBuilding && (mineralCount >= 100) && (supplyLeft <= sensitivity);
     if (shouldBuildDepot) {
-        if (TryBuildStructure(ABILITY_ID::BUILD_SUPPLYDEPOT, latestCommCen->pos)) {
+        if (TryBuildStructure(ABILITY_ID::BUILD_SUPPLYDEPOT)) {
             depotBuilding = true;
         }
     }
@@ -26,7 +26,8 @@ void BobTheBot::CommandCenterManager() {
             expansionLocations.pop_back();
             return;
         }
-        if (TryBuildStructure(ABILITY_ID::BUILD_COMMANDCENTER, closestLocation)) {
+        
+        if (TryBuildStructure(ABILITY_ID::BUILD_COMMANDCENTER)) {
             expansionLocations.pop_back();
         }
     }
@@ -70,7 +71,7 @@ void BobTheBot::RefineryManager() {
     bool enoughMinerals = observer->GetMinerals() > 75;
     bool enoughSpace = observer->GetFoodCap() > observer->GetFoodUsed();
     if (geysersToBuildOn.size() > 0 && enoughMinerals && enoughSpace) {
-        TryBuildStructure(ABILITY_ID::BUILD_REFINERY, Point2D(0, 0), geysersToBuildOn.back());
+        TryBuildStructure(ABILITY_ID::BUILD_REFINERY, geysersToBuildOn.back());
         geysersToBuildOn.pop_back();
     }
 
@@ -134,8 +135,16 @@ Point2D BobTheBot::getValidNearbyLocation(Point2D location, ABILITY_ID ability_t
     return approxLocation;
 }
 
-bool BobTheBot::TryBuildStructure(ABILITY_ID ability_type_for_structure, Point2D location, const Unit* unit_to_build_on)
+bool BobTheBot::TryBuildStructure(ABILITY_ID ability_type_for_structure, const Unit* unit_to_build_on)
 {
+    Point2D location;
+    if (ability_type_for_structure == ABILITY_ID::BUILD_COMMANDCENTER) {
+        location = expansionLocations.back();
+    }
+    else {
+        location = latestCommCen->pos;
+    }
+   
     const Unit* unit_to_build = getAvailableSCV();
     if (!unit_to_build) {
         return false;
