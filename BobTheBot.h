@@ -38,7 +38,7 @@ private:
 	bool MineMinerals(const Unit* scv);
 
 	// Helpers
-	bool TryBuildStructure(ABILITY_ID ability_type_for_structure, Point2D locationApprox = Point2D(0, 0), const Unit* unit_to_build_on = nullptr);
+	bool TryBuildStructure(ABILITY_ID ability_type_for_structure, const Unit* unit_to_build_on = nullptr);
 	const Unit* FindNearest(const Point2D& start, UNIT_TYPEID unitType);
 	const Unit* FindSecondNearest(const Point2D& start, UNIT_TYPEID unitType);
 	const Unit* getAvailableSCV();

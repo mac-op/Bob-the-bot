@@ -29,7 +29,7 @@ void BobTheBot::OnStep() {
     ContinuousSCVSpawn(2);
     CommandCenterManager();
     RefineryManager();
-    ManageOffensive();
+    //ManageOffensive();
 }
 
 
