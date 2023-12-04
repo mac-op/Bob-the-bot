@@ -16,30 +16,34 @@ void BobTheBot::OnGameStart() {
 
 void BobTheBot::OnStep() {
     //Throttle some behavior that can wait to avoid duplicate orders.
-    int frames_to_skip = 8;
+    int frames_to_skip = 4;
     if (observer->GetFoodUsed() >= observer->GetFoodCap()) {
-        frames_to_skip = 10;
+        frames_to_skip = 6;
     }
 
     if (Observation()->GetGameLoop() % frames_to_skip != 0) {
         return;
     }
+    Units bases = observer->GetUnits(Unit::Alliance::Self, IsTownHall());
 
     SupplyDepotManager(7);
-    ContinuousSCVSpawn(2);
-    CommandCenterManager();
+    if (bases.size() > 1 ){
+        ContinuousSCVSpawn(5);
+    } else{
+        ContinuousSCVSpawn(2);
+    }
+
+    if (observer->GetFoodArmy() < bases.size() * 25){
+        ManageOffensive();
+    }
+
     RefineryManager();
-    ManageOffensive();
+    CommandCenterManager();
 }
 
 
 void BobTheBot::OnUnitIdle(const Unit* unit) {
     switch (unit->unit_type.ToType()) {
-//        case UNIT_TYPEID::TERRAN_BARRACKS: {
-//            actions->UnitCommand(unit, ABILITY_ID::TRAIN_MARINE);
-//            break;
-//        }
-
         case UNIT_TYPEID::TERRAN_SCV: {
             MineMinerals(unit);
             break;

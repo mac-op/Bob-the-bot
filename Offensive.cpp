@@ -8,11 +8,11 @@ void BobTheBot::ManageOffensiveStructures() {
     Units armory = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_ARMORY));
     Units engBay = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_ENGINEERINGBAY));
 
-    if (depots.size() > 1 && barracks.size() <= bases.size() * 3) {
-        if (observer->GetMinerals() > 150)
+    if (depots.size() > 1 && barracks.size() < bases.size() * 2) {
+        if (observer->GetMinerals() > 150) {
             if (TryBuildStructure(ABILITY_ID::BUILD_BARRACKS)) return;
+        }
     }
-
     // Build Reactor for barracks
     for (auto barrack : barracks) {
         if (observer->GetMinerals() >= 100)
@@ -27,16 +27,17 @@ void BobTheBot::ManageOffensiveStructures() {
 
     uint32_t minerals = observer->GetMinerals();
     uint32_t gas = observer->GetVespene();
+
     // Build some advanced structures once barracks are built
     if (!barracks.empty()){
+        if (factories.size() < bases.size() && minerals > 150 && gas > 100) {
+            if (TryBuildStructure(ABILITY_ID::BUILD_FACTORY)) return;
+        }
         if (armory.size() < 1 && !factories.empty() && minerals >= 200){
             if (TryBuildStructure(ABILITY_ID::BUILD_ARMORY)) return;
         }
         if (engBay.size() < 1 && minerals > 150 && gas > 100) {
             if (TryBuildStructure(ABILITY_ID::BUILD_ENGINEERINGBAY)) return;
-        }
-        if (factories.size() < bases.size() && minerals > 200 && gas > 100) {
-            if (TryBuildStructure(ABILITY_ID::BUILD_FACTORY)) return;
         }
     }
 }
@@ -51,10 +52,10 @@ const Unit* BobTheBot::GetRandomUnit(UnitTypeID unit_type) {
 }
 
 bool BobTheBot::FindEnemyPosition(Point2D& target_pos) {
-    if (gameInfo.enemy_start_locations.empty()) {
+    if (gameInfo.enemy_start_locations.empty() || expansionLocations.size() <= 8) {
         return false;
     }
-    target_pos = GetRandomEntry(gameInfo.enemy_start_locations);
+    target_pos = GetRandomEntry(expansionLocations);
     return true;
 }
 
@@ -79,64 +80,51 @@ bool BobTheBot::FindRandomLocation(const Unit* unit, Point2D& target_pos) {
 
 void BobTheBot::AttackWithUnit(const Unit* unit) {
     //If unit isn't doing anything make it attack.
-    Units enemy_units = observer->GetUnits(Unit::Alliance::Enemy);
+    Units enemy_units = Observation()->GetUnits(Unit::Alliance::Enemy);
     if (enemy_units.empty()) {
         return;
     }
+    Point2D originalLocation = unit->pos;
 
     if (unit->orders.empty()) {
-        Actions()->UnitCommand(unit, ABILITY_ID::ATTACK, enemy_units.front()->pos);
+        actions->UnitCommand(unit, ABILITY_ID::ATTACK, enemy_units.front()->pos);
+//        actions->UnitCommand(unit, ABILITY_ID::SMART, originalLocation, true);
         return;
     }
 
     //If the unit is doing something besides attacking, make it attack.
     if (unit->orders.front().ability_id != ABILITY_ID::ATTACK) {
-        Actions()->UnitCommand(unit, ABILITY_ID::ATTACK, enemy_units.front()->pos);
+        actions->UnitCommand(unit, ABILITY_ID::ATTACK, enemy_units.front()->pos);
+//        actions->UnitCommand(unit, ABILITY_ID::SMART, originalLocation, true);
     }
 }
 
 void BobTheBot::ManageOffensive() {
+    BuildArmy();
     ManageOffensiveStructures();
+
     UpgradeArmy();
-//    Scout();
+    Attack();
+}
 
-    Units enemies = observer->GetUnits(Unit::Alliance::Enemy);
-//    if (!enemies.empty()) {
-//        Units marines = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_MARINE));
-//        for (auto marine: marines) {
-//            AttackWithUnit(marine);
-//        }
-//    }
-    Units bases = observer->GetUnits(Unit::Alliance::Self, IsTownHall());
-    Units barracks = observer->GetUnits(Unit::Alliance::Self, IsUnits({UNIT_TYPEID::TERRAN_BARRACKS, UNIT_TYPEID::TERRAN_BARRACKSREACTOR}));
-    Units factories = observer->GetUnits(Unit::Alliance::Self, IsUnits({UNIT_TYPEID::TERRAN_FACTORY, UNIT_TYPEID::TERRAN_FACTORYTECHLAB}));
-    Units armories = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_ARMORY));
+void BobTheBot::BuildArmy() {
+    Units bases = observer->GetUnits(Unit::Self, IsTownHall());
+    Units barracks = observer->GetUnits(Unit::Self, IsUnits({UNIT_TYPEID::TERRAN_BARRACKS, UNIT_TYPEID::TERRAN_BARRACKSREACTOR}));
+    Units factories = observer->GetUnits(Unit::Self, IsUnits({UNIT_TYPEID::TERRAN_FACTORY, UNIT_TYPEID::TERRAN_FACTORYTECHLAB}));
+    Units armories = observer->GetUnits(Unit::Self, IsUnit(UNIT_TYPEID::TERRAN_ARMORY));
 
-    Units tanks = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_SIEGETANK));
-    Units thors = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_THOR));
-    Units hellions = observer->GetUnits(Unit::Alliance::Self, IsUnits({UNIT_TYPEID::TERRAN_HELLION, UNIT_TYPEID::TERRAN_HELLIONTANK}));
-    Units marines = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_MARINE));
-    Units reapers = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_REAPER));
+    Units tanks = observer->GetUnits(Unit::Self, IsUnit(UNIT_TYPEID::TERRAN_SIEGETANK));
+    Units thors = observer->GetUnits(Unit::Self, IsUnit(UNIT_TYPEID::TERRAN_THOR));
+    Units hellions = observer->GetUnits(Unit::Self, IsUnits({UNIT_TYPEID::TERRAN_HELLION, UNIT_TYPEID::TERRAN_HELLIONTANK}));
+    Units marines = observer->GetUnits(Unit::Self, IsUnit(UNIT_TYPEID::TERRAN_MARINE));
+    Units reapers = observer->GetUnits(Unit::Self, IsUnit(UNIT_TYPEID::TERRAN_REAPER));
 
-    for (auto barrack : barracks) {
-        if (observer->GetUnit(barrack->add_on_tag) == nullptr) {
-            if (barrack->orders.empty() && marines.size() < 5 * barracks.size()) {
-                actions->UnitCommand(barrack, ABILITY_ID::TRAIN_MARINE);
-            }
-        } else {                            // If Barracks Reactor
-            if (barrack->orders.size() == 2) continue;
-            if (marines.size() < 5 * barracks.size()) {
-                actions->UnitCommand(barrack, ABILITY_ID::TRAIN_MARINE);
-            }
-            if (reapers.size() * 3 < marines.size()) {
-                actions->UnitCommand(barrack, ABILITY_ID::TRAIN_REAPER);
-            }
-        }
-    }
+    uint32_t minerals = observer->GetMinerals();
+    uint32_t vespene = observer->GetVespene();
 
     for (auto factory : factories) {
-        if (observer->GetUnit(factory->add_on_tag) == nullptr) {
-            if (!factory->orders.empty() || hellions.size() >= 7 * bases.size()) continue;
+        if (Observation()->GetUnit(factory->add_on_tag) == nullptr) {
+            if (!factory->orders.empty() || hellions.size() >= 2 * factories.size() || minerals < 100) continue;
             if (!armories.empty()) {
                 actions->UnitCommand(factory, ABILITY_ID::TRAIN_HELLBAT);
             } else {
@@ -145,22 +133,53 @@ void BobTheBot::ManageOffensive() {
         } else {            // Factory with Tech Lab
             if (!factory->orders.empty()) continue;
 
-            uint32_t minerals = observer->GetMinerals();
-            uint32_t vespene = observer->GetVespene();
-            if (!armories.empty() || thors.size() < bases.size()) {
-                if (minerals >= 350 && vespene >= 250)
-                    actions->UnitCommand(factory, ABILITY_ID::TRAIN_THOR);
-            } else if (tanks.size() < bases.size() * 2) {
-                if (minerals >= 150 && vespene >125)
-                    actions->UnitCommand(factory, ABILITY_ID::TRAIN_SIEGETANK);
-            } else {
-                if (minerals >= 100 && hellions.size() >= 7 * bases.size())
+            if (tanks.size() < 5) {
+                actions->UnitCommand(factory, ABILITY_ID::TRAIN_SIEGETANK);
+            }
+            if (thors.size() < 4) {
+                actions->UnitCommand(factory, ABILITY_ID::TRAIN_THOR);
+            }
+
+            if (!armories.empty() || hellions.size() < 2 * factories.size()) {
+                if (minerals >= 100)
                     actions->UnitCommand(factory, ABILITY_ID::TRAIN_HELLION);
             }
         }
     }
 
-//    for (auto)
+    for (auto barrack : barracks) {
+        if (observer->GetUnit(barrack->add_on_tag) == nullptr) {
+            if (barrack->orders.empty() && marines.size() < 3 * barracks.size()) {
+                actions->UnitCommand(barrack, ABILITY_ID::TRAIN_MARINE);
+            }
+        } else {                            // If Barracks Reactor
+            if (barrack->orders.size() == 2) continue;
+            if (marines.size() < 3 * barracks.size()) {
+                actions->UnitCommand(barrack, ABILITY_ID::TRAIN_MARINE);
+            }
+            if (reapers.size() * 3 < marines.size()) {
+                actions->UnitCommand(barrack, ABILITY_ID::TRAIN_REAPER);
+            }
+        }
+    }
+}
+
+void BobTheBot::Attack() {
+    Units enemy = observer->GetUnits(Unit::Alliance::Enemy);
+    if (enemy.empty()) {
+        uint32_t currentGameLoop = Observation()->GetGameLoop();
+        if ( currentGameLoop < ScoutDelay.gameLoop) return;
+
+        ScoutDelay.gameLoop = currentGameLoop + ScoutDelay.delay;
+        Scout();
+        return;
+    }
+
+    Units army = observer->GetUnits(Unit::Alliance::Self, IsUnits(armyTypes));
+    if (army.size() < 15) return;
+    for (auto unit : army) {
+        AttackWithUnit(unit);
+    }
 }
 
 /*
@@ -189,12 +208,12 @@ void BobTheBot::UpgradeArmy() {
         // Not very costly since upgrades is small
         if (std::find(upgrades.begin(), upgrades.end(), UPGRADE_ID::TERRANINFANTRYARMORSLEVEL3) == upgrades.end()) {
             if (bases.size() >= upgrades.size() / 2) {
-                actions->UnitCommand(engBay, ABILITY_ID::RESEARCH_TERRANINFANTRYARMOR);
+                actions->UnitCommand(engBay, ABILITY_ID::RESEARCH_TERRANINFANTRYARMOR, true);
             }
         }
         if (std::find(upgrades.begin(), upgrades.end(), UPGRADE_ID::TERRANINFANTRYWEAPONSLEVEL3) == upgrades.end()) {
             if (bases.size() >= upgrades.size() / 2) {
-                actions->UnitCommand(engBay, ABILITY_ID::RESEARCH_TERRANINFANTRYWEAPONS);
+                actions->UnitCommand(engBay, ABILITY_ID::RESEARCH_TERRANINFANTRYWEAPONS, true);
             }
         }
     }
@@ -202,12 +221,12 @@ void BobTheBot::UpgradeArmy() {
     if (!armory.empty()) {
         if (std::find(upgrades.begin(), upgrades.end(), UPGRADE_ID::TERRANVEHICLEARMORSLEVEL3) == upgrades.end()) {
             if (bases.size() >= upgrades.size() / 2) {
-                actions->UnitCommand(armory, ABILITY_ID::RESEARCH_TERRANVEHICLEANDSHIPPLATING);
+                actions->UnitCommand(armory, ABILITY_ID::RESEARCH_TERRANVEHICLEANDSHIPPLATING, true);
             }
         }
         if (std::find(upgrades.begin(), upgrades.end(), UPGRADE_ID::TERRANINFANTRYWEAPONSLEVEL3) == upgrades.end()) {
             if (bases.size() >= upgrades.size() / 2) {
-                actions->UnitCommand(armory, ABILITY_ID::RESEARCH_TERRANVEHICLEWEAPONS);
+                actions->UnitCommand(armory, ABILITY_ID::RESEARCH_TERRANVEHICLEWEAPONS, true);
             }
         }
     }
@@ -217,6 +236,8 @@ void BobTheBot::Scout() {
     Units enemy_units = observer->GetUnits(Unit::Alliance::Enemy);
     const Unit* unit = GetRandomUnit(UNIT_TYPEID::TERRAN_MARINE);
     if (!unit) return;
+
+    Point2D originalLocation = unit->pos;
     if (!unit->orders.empty()) {
         return;
     }
@@ -237,8 +258,11 @@ void BobTheBot::Scout() {
         Actions()->UnitCommand(unit, ABILITY_ID::SMART, target_pos);
     }
     else {
-        if (FindRandomLocation(unit, target_pos)) {
-            Actions()->UnitCommand(unit, ABILITY_ID::SMART, target_pos);
+        for (int i = 0; i < 2; i++) {
+            if (FindRandomLocation(unit, target_pos)) {
+                actions->UnitCommand(unit, ABILITY_ID::SMART, target_pos, true);
+            }
         }
+        actions->UnitCommand(unit, ABILITY_ID::SMART, originalLocation, true);
     }
 }

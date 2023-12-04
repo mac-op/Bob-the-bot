@@ -1,5 +1,4 @@
 #include "BobTheBot.h"
-#include <iostream>
 #include <algorithm>
 #include <random>
 
@@ -19,7 +18,7 @@ void BobTheBot::SupplyDepotManager(int sensitivity) {
 
 bool commandCenterBuilding = false;
 void BobTheBot::CommandCenterManager() {
-    if (observer->GetMinerals() > 500 && expansionLocations.size() > 0 && !commandCenterBuilding) {
+    if (observer->GetMinerals() > 600 && expansionLocations.size() > 0 && !commandCenterBuilding) {
         //commandCenterBuilding = true;
         Point3D closestLocation = expansionLocations.back();
         if (closestLocation.x == 0 && closestLocation.y == 0) {
@@ -61,7 +60,8 @@ bool BobTheBot::MineMinerals(const Unit* scv) {
 
 void BobTheBot::ContinuousSCVSpawn(int leeway) {
     // leeway is how much space we should reserve for other units when we are nearing the supply limit
-    const Units commandCenters = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_COMMANDCENTER));
+    const Units commandCenters = observer->GetUnits(Unit::Alliance::Self, IsTownHall());
+
     for (const Unit* commandCenter : commandCenters)
     {
         bool enoughMinerals = observer->GetMinerals() > 50;
@@ -85,7 +85,7 @@ void BobTheBot::RefineryManager() {
 
     const Units refineries = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_REFINERY));
     for (auto refinery : refineries) {
-        if (refinery->assigned_harvesters < refinery->ideal_harvesters) {
+        if (refinery->assigned_harvesters < refinery->ideal_harvesters - 2) {
             const Unit* scv = getAvailableSCV();
             actions->UnitCommand(scv, ABILITY_ID::SMART, refinery);
         }
@@ -130,8 +130,8 @@ Point2D BobTheBot::getValidNearbyLocation(Point2D location, ABILITY_ID ability_t
     {
         rx = GetRandomScalar();
         ry = GetRandomScalar();
-        approxLocation.x = location.x + rx * 25.0f;
-        approxLocation.y = location.y + ry * 25.0f;
+        approxLocation.x = location.x + rx * 20.0f;
+        approxLocation.y = location.y + ry * 20.0f;
         ++attempts;
     }
 
@@ -213,6 +213,10 @@ void BobTheBot::OnBuildingConstructionComplete(const Unit* unit)
         break;
     }
 
+    case UNIT_TYPEID::TERRAN_BARRACKS: {
+        Units barracks = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_BARRACKS));
+        if (barracks.size() == 1) ScoutDelay.gameLoop += Observation()->GetGameLoop();
+    }
     default:
         break;
     }

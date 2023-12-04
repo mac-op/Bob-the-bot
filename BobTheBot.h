@@ -18,7 +18,10 @@ public:
 	virtual void OnBuildingConstructionComplete(const Unit* unit);
 	virtual void OnUnitDestroyed(const Unit* unit);
 
-
+    const std::vector<UNIT_TYPEID> armyTypes {
+        UNIT_TYPEID::TERRAN_REAPER, UNIT_TYPEID::TERRAN_MARINE, UNIT_TYPEID::TERRAN_SIEGETANK,
+        UNIT_TYPEID::TERRAN_THOR, UNIT_TYPEID::TERRAN_HELLIONTANK, UNIT_TYPEID::TERRAN_HELLION
+    };
 private:
 	// Game state
 	const ObservationInterface* observer = Observation();
@@ -63,6 +66,15 @@ private:
     void BuildAddOn(ABILITY_ID ability, const Unit *unit);
 
     void UpgradeArmy();
+
+    void Attack();
+
+    struct {
+        uint32_t gameLoop = 350;
+        uint32_t delay = 150;
+    } ScoutDelay;
+
+    void BuildArmy();
 };
 
 #endif
