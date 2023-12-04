@@ -16,9 +16,9 @@ void BobTheBot::OnGameStart() {
 
 void BobTheBot::OnStep() {
     //Throttle some behavior that can wait to avoid duplicate orders.
-    int frames_to_skip = 4;
+    int frames_to_skip = 8;
     if (observer->GetFoodUsed() >= observer->GetFoodCap()) {
-        frames_to_skip = 6;
+        frames_to_skip = 10;
     }
 
     if (Observation()->GetGameLoop() % frames_to_skip != 0) {
@@ -29,16 +29,16 @@ void BobTheBot::OnStep() {
     ContinuousSCVSpawn(2);
     CommandCenterManager();
     RefineryManager();
-    //ManageOffensive();
+    ManageOffensive();
 }
 
 
 void BobTheBot::OnUnitIdle(const Unit* unit) {
     switch (unit->unit_type.ToType()) {
-        case UNIT_TYPEID::TERRAN_BARRACKS: {
-            actions->UnitCommand(unit, ABILITY_ID::TRAIN_MARINE);
-            break;
-        }
+//        case UNIT_TYPEID::TERRAN_BARRACKS: {
+//            actions->UnitCommand(unit, ABILITY_ID::TRAIN_MARINE);
+//            break;
+//        }
 
         case UNIT_TYPEID::TERRAN_SCV: {
             MineMinerals(unit);
