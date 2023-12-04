@@ -170,7 +170,9 @@ static void RunBot(int argc, char *argv[], sc2::Agent *Agent, sc2::Race race)
 		std::cout << " Successfully joined game" << std::endl;
 	}
 
-	coordinator.SetTimeoutMS(10000);
-	while (coordinator.Update()) {
-	}
+    coordinator.SetTimeoutMS(10000);
+    while (coordinator.Update()) {
+    }
+    std::vector<PlayerResult> result = Agent->Observation()->GetResults();
+    std::cout << result[0].result << '\n';
 }

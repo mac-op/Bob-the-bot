@@ -57,7 +57,7 @@ private:
 
     bool FindEnemyPosition(Point2D &target_pos);
 
-    bool FindRandomLocation(const Unit *unit, Point2D &target_pos);
+    bool FindRandomCorner(const Unit *unit, Point2D &target_pos);
 
     void AttackWithUnit(const Unit *unit);
 
@@ -70,6 +70,7 @@ private:
     void Attack();
 
     struct {
+        uint32_t baseScoutEnabled = 0;
         uint32_t gameLoop = 350;
         uint32_t delay = 150;
     } ScoutDelay;

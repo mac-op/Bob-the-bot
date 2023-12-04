@@ -1,4 +1,5 @@
 #include "BobTheBot.h"
+#include <random>
 
 void BobTheBot::ManageOffensiveStructures() {
     Units bases = observer->GetUnits(Unit::Alliance::Self, IsTownHall());
@@ -55,11 +56,15 @@ bool BobTheBot::FindEnemyPosition(Point2D& target_pos) {
     if (gameInfo.enemy_start_locations.empty() || expansionLocations.size() <= 8) {
         return false;
     }
-    target_pos = GetRandomEntry(expansionLocations);
+    if (observer->GetGameLoop() % 3) {
+        target_pos = GetRandomEntry(expansionLocations);
+    } else {
+        target_pos = GetRandomEntry(gameInfo.enemy_start_locations);
+    }
     return true;
 }
 
-bool BobTheBot::FindRandomLocation(const Unit* unit, Point2D& target_pos) {
+bool BobTheBot::FindRandomCorner(const Unit* unit, Point2D& target_pos) {
     // First, find a random point inside the playable area of the map.
     float playable_w = gameInfo.playable_max.x - gameInfo.playable_min.x;
     float playable_h = gameInfo.playable_max.y - gameInfo.playable_min.y;
@@ -69,9 +74,14 @@ bool BobTheBot::FindRandomLocation(const Unit* unit, Point2D& target_pos) {
         playable_w = 236;
         playable_h = 228;
     }
+    std::vector<Point2D> corners {{0.05, 0.05}, {0.05, 0.95}, {0.95, 0.05}, {0.95, 0.95}};
+    Point2D corner = GetRandomEntry(corners);
+    std::uniform_real_distribution<double> dist_x(corner.x-0.05, corner.x +0.05);
+    std::uniform_real_distribution<double> dist_y(corner.y-0.05, corner.y +0.05);
+    std::default_random_engine generator;
 
-    target_pos.x = playable_w * GetRandomFraction() + gameInfo.playable_min.x;
-    target_pos.y = playable_h * GetRandomFraction() + gameInfo.playable_min.y;
+    target_pos.x = playable_w * dist_x(generator) + gameInfo.playable_min.x;
+    target_pos.y = playable_h * dist_y(generator) + gameInfo.playable_min.y;
 
     float distance = Query()->PathingDistance(unit, target_pos);
 
@@ -101,7 +111,7 @@ void BobTheBot::AttackWithUnit(const Unit* unit) {
 
 void BobTheBot::ManageOffensive() {
     Units bases = observer->GetUnits(Unit::Alliance::Self, IsTownHall());
-    if (observer->GetFoodArmy() < bases.size() * 25) {
+    if (observer->GetFoodArmy() < bases.size() * 30) {
         BuildArmy();
     }
     ManageOffensiveStructures();
@@ -142,7 +152,6 @@ void BobTheBot::BuildArmy() {
             if (thors.size() < 5) {
                 actions->UnitCommand(factory, ABILITY_ID::TRAIN_THOR);
             }
-
             if (!armories.empty() || hellions.size() < 3 * factories.size()) {
                 if (minerals >= 100)
                     actions->UnitCommand(factory, ABILITY_ID::TRAIN_HELLION);
@@ -160,7 +169,7 @@ void BobTheBot::BuildArmy() {
             if (marines.size() < 3 * barracks.size()) {
                 actions->UnitCommand(barrack, ABILITY_ID::TRAIN_MARINE);
             }
-            if (reapers.size() * 3 < marines.size()) {
+            if (reapers.size() * 2 < marines.size()) {
                 actions->UnitCommand(barrack, ABILITY_ID::TRAIN_REAPER);
             }
         }
@@ -170,16 +179,12 @@ void BobTheBot::BuildArmy() {
 void BobTheBot::Attack() {
     Units enemy = observer->GetUnits(Unit::Alliance::Enemy);
     if (enemy.empty()) {
-        uint32_t currentGameLoop = Observation()->GetGameLoop();
-        if ( currentGameLoop < ScoutDelay.gameLoop) return;
-
-        ScoutDelay.gameLoop = currentGameLoop + ScoutDelay.delay;
         Scout();
         return;
     }
 
     Units army = observer->GetUnits(Unit::Alliance::Self, IsUnits(armyTypes));
-    if (army.size() < 15) return;
+    if (army.size() < 7) return;
     for (auto unit : army) {
         AttackWithUnit(unit);
     }
@@ -242,13 +247,25 @@ void BobTheBot::Scout() {
     }
     Point2D target_pos;
 
+    if (Observation()->GetGameLoop() >= ScoutDelay.baseScoutEnabled) {
+        if (FindRandomCorner(unit, target_pos)) {
+            actions->UnitCommand(unit, ABILITY_ID::SMART, target_pos);
+        }
+        ScoutDelay.baseScoutEnabled *= 2;
+        return;
+    }
+    uint32_t currentGameLoop = Observation()->GetGameLoop();
+    if ( currentGameLoop < ScoutDelay.gameLoop) return;
+
+    ScoutDelay.gameLoop = currentGameLoop + ScoutDelay.delay;
+
     if (FindEnemyPosition(target_pos)) {
         Actions()->UnitCommand(unit, ABILITY_ID::SMART, target_pos);
     }
     else {
         for (int i = 0; i < 2; i++) {
-            if (FindRandomLocation(unit, target_pos)) {
-                actions->UnitCommand(unit, ABILITY_ID::SMART, target_pos, true);
+            if (FindRandomCorner(unit, target_pos)) {
+                actions->UnitCommand(unit, ABILITY_ID::SMART, target_pos);
             }
         }
         actions->UnitCommand(unit, ABILITY_ID::SMART, originalLocation, true);

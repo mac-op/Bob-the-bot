@@ -18,8 +18,11 @@ void BobTheBot::SupplyDepotManager(int sensitivity) {
 
 bool commandCenterBuilding = false;
 void BobTheBot::CommandCenterManager() {
+    Units bases = observer->GetUnits(Unit::Self, IsTownHall());
+    Units barracks = observer->GetUnits(Unit::Self, IsUnits({UNIT_TYPEID::TERRAN_BARRACKS, UNIT_TYPEID::TERRAN_BARRACKSREACTOR}));
+
+//    if (bases.size() >= barracks.size() / 2) {return;}
     if (observer->GetMinerals() > 400 && expansionLocations.size() > 0 && !commandCenterBuilding) {
-        //commandCenterBuilding = true;
         Point3D closestLocation = expansionLocations.back();
         if (closestLocation.x == 0 && closestLocation.y == 0) {
             expansionLocations.pop_back();
@@ -215,7 +218,7 @@ void BobTheBot::OnBuildingConstructionComplete(const Unit* unit)
 
     case UNIT_TYPEID::TERRAN_BARRACKS: {
         Units barracks = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_BARRACKS));
-        if (barracks.size() == 1) ScoutDelay.gameLoop += Observation()->GetGameLoop();
+        if (barracks.size() == 1) ScoutDelay.baseScoutEnabled = Observation()->GetGameLoop() * 2;
     }
     default:
         break;
