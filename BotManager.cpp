@@ -13,7 +13,6 @@ void BobTheBot::OnGameStart() {
     geysersToBuildOn.insert(geysersToBuildOn.begin(), FindSecondNearest(observer->GetStartLocation(), UNIT_TYPEID::NEUTRAL_VESPENEGEYSER));
 }
 
-
 void BobTheBot::OnStep() {
     //Throttle some behavior that can wait to avoid duplicate orders.
     int frames_to_skip = 4;
