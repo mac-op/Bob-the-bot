@@ -38,6 +38,7 @@ private:
 	void SupplyDepotManager(int sensitivity);
 	void RefineryManager();
 	void CommandCenterManager();
+	void ManageOffensive();
 	bool MineMinerals(const Unit* scv);
 
 	// Helpers
@@ -60,8 +61,6 @@ private:
     bool FindRandomCorner(const Unit *unit, Point2D &target_pos);
 
     void AttackWithUnit(const Unit *unit);
-
-    void ManageOffensive();
 
     void BuildAddOn(ABILITY_ID ability, const Unit *unit);
 

@@ -16,14 +16,13 @@ void BobTheBot::SupplyDepotManager(int sensitivity) {
     }
 }
 
-bool commandCenterBuilding = false;
-void BobTheBot::CommandCenterManager() {
-    Units bases = observer->GetUnits(Unit::Self, IsTownHall());
-    Units barracks = observer->GetUnits(Unit::Self, IsUnits({UNIT_TYPEID::TERRAN_BARRACKS, UNIT_TYPEID::TERRAN_BARRACKSREACTOR}));
 
-//    if (bases.size() >= barracks.size() / 2) {return;}
-    if (observer->GetMinerals() > 400 && expansionLocations.size() > 0 && !commandCenterBuilding) {
+void BobTheBot::CommandCenterManager() {
+    // If we have enough minerals, and we aren't out of locations to expand to
+    if (observer->GetMinerals() > 400 && expansionLocations.size() > 0) {
         Point3D closestLocation = expansionLocations.back();
+        
+        // Expansion location (0, 0) is invalid, we ignore it if it appears
         if (closestLocation.x == 0 && closestLocation.y == 0) {
             expansionLocations.pop_back();
             return;
@@ -34,13 +33,15 @@ void BobTheBot::CommandCenterManager() {
         }
     }
 
+    // Upgrade any command center to orbital command as soon as we have enough mineral
     const Units commandCenters = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_COMMANDCENTER));
     for (auto commandCenter : commandCenters) {
         if (observer->GetMinerals() > 150) {
             actions->UnitCommand(commandCenter, ABILITY_ID::MORPH_ORBITALCOMMAND);
         }
     }
-
+    
+    // Spawn a MULE as often as possible at all orbital commands
     const Units orbitalCommands = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_ORBITALCOMMAND));
     for (auto orbitalCommand : orbitalCommands) {
         if (orbitalCommand->energy > 50) {
@@ -78,7 +79,7 @@ void BobTheBot::ContinuousSCVSpawn(int leeway) {
 
 
 void BobTheBot::RefineryManager() {
-    // Build new refineries, if possible
+    // Build new refineries, if possible, and if there is any to be built
     bool enoughMinerals = observer->GetMinerals() > 75;
     bool enoughSpace = observer->GetFoodCap() > observer->GetFoodUsed();
     if (geysersToBuildOn.size() > 0 && enoughMinerals && enoughSpace) {
@@ -86,9 +87,10 @@ void BobTheBot::RefineryManager() {
         geysersToBuildOn.pop_back();
     }
 
+    // Keep assigning SCVs to the refinery, until we reach the reduced limit of ideal_harvesters - 2 that we set
     const Units refineries = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_REFINERY));
     for (auto refinery : refineries) {
-        if (refinery->assigned_harvesters < refinery->ideal_harvesters - 2) {
+        if (refinery->assigned_harvesters < refinery->ideal_harvesters - 2) {   // Our strategy doesn't need as much gas, so we place a limit
             const Unit* scv = getAvailableSCV();
             actions->UnitCommand(scv, ABILITY_ID::SMART, refinery);
         }
@@ -103,11 +105,7 @@ bool BobTheBot::compareDistance(const Point3D& p1, const Point3D& p2, const Poin
 
 
 void BobTheBot::getExpansionLocations() {
-    search::ExpansionParameters ep;
-    DebugInterface* d = Debug();
-    ep.debug_ = d;
-    expansionLocations = search::CalculateExpansionLocations(observer, query, ep);
-    d->SendDebug();
+    expansionLocations = search::CalculateExpansionLocations(observer, query);
     
     Point3D refPoint = observer->GetStartLocation();
     // Sorting the vector based on distance to the initial command center
@@ -146,12 +144,16 @@ Point2D BobTheBot::getValidNearbyLocation(Point2D location, ABILITY_ID ability_t
     return approxLocation;
 }
 
+
+// Referenced from: https://github.com/Blizzard/s2client-api/blob/master/examples/common/bot_examples.cc
 bool BobTheBot::TryBuildStructure(ABILITY_ID ability_type_for_structure, const Unit* unit_to_build_on)
 {
     Point2D location;
+    // If we are building a new command center, grab the closest location from the expansionLocations list
     if (ability_type_for_structure == ABILITY_ID::BUILD_COMMANDCENTER) {
         location = expansionLocations.back();
     }
+    // else build at the latest commanc center
     else {
         location = latestCommCen->pos;
     }
@@ -159,11 +161,6 @@ bool BobTheBot::TryBuildStructure(ABILITY_ID ability_type_for_structure, const U
     const Unit* unit_to_build = getAvailableSCV();
     if (!unit_to_build) {
         return false;
-    }
-
-    if (location.x == 0 && location.y == 0) {
-        location.x = unit_to_build->pos.x;
-        location.y = unit_to_build->pos.y;
     }
 
     // Edge case for refineries, you need to provide the nearest geyser
@@ -204,17 +201,17 @@ void BobTheBot::OnBuildingConstructionComplete(const Unit* unit)
         geysersToBuildOn.insert(geysersToBuildOn.begin(), FindNearest(unit->pos, UNIT_TYPEID::NEUTRAL_VESPENEGEYSER));
         geysersToBuildOn.insert(geysersToBuildOn.begin(), FindSecondNearest(unit->pos, UNIT_TYPEID::NEUTRAL_VESPENEGEYSER));
         latestCommCen = unit;
-        commandCenterBuilding = false;
         break;
     }
+    
 
-    case UNIT_TYPEID::TERRAN_REFINERY: {
-        const Unit* scv1 = getAvailableSCV();
-        const Unit* scv2 = getAvailableSCV();
-        actions->UnitCommand(scv1, ABILITY_ID::SMART, unit);
-        actions->UnitCommand(scv2, ABILITY_ID::SMART, unit);
-        break;
-    }
+    //case UNIT_TYPEID::TERRAN_REFINERY: {
+    //    const Unit* scv1 = getAvailableSCV();
+    //    const Unit* scv2 = getAvailableSCV();
+    //    actions->UnitCommand(scv1, ABILITY_ID::SMART, unit);
+    //    actions->UnitCommand(scv2, ABILITY_ID::SMART, unit);
+    //    break;
+    //}
 
     case UNIT_TYPEID::TERRAN_BARRACKS: {
         Units barracks = observer->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_BARRACKS));
@@ -229,6 +226,7 @@ void BobTheBot::OnBuildingConstructionComplete(const Unit* unit)
 void BobTheBot::OnUnitDestroyed(const Unit* unit) {
     switch (unit->unit_type.ToType()) {
     
+    // If a command center is destroyed, add it back to the list of expansion location, and send some troops to the destroyed location
     case UNIT_TYPEID::TERRAN_COMMANDCENTER: {
         expansionLocations.insert(expansionLocations.begin(), unit->pos);
         Units army = observer->GetUnits(Unit::Alliance::Self, IsUnits(armyTypes));
@@ -238,7 +236,8 @@ void BobTheBot::OnUnitDestroyed(const Unit* unit) {
         break;
         expansionLocations.push_back(unit->pos);
     }
-
+    
+    // We can now build on that geyser again
     case UNIT_TYPEID::TERRAN_REFINERY: {
         geysersToBuildOn.insert(geysersToBuildOn.begin(), FindNearest(unit->pos, UNIT_TYPEID::NEUTRAL_VESPENEGEYSER));
         break;
@@ -249,7 +248,7 @@ void BobTheBot::OnUnitDestroyed(const Unit* unit) {
     }
 }
 
-
+// Referenced from: https://github.com/Blizzard/s2client-api/blob/master/examples/common/bot_examples.cc
 const Unit* BobTheBot::FindNearest(const Point2D& start, UNIT_TYPEID unitType) {
     Units units = observer->GetUnits(Unit::Alliance::Neutral, IsUnit(unitType));
     float distance = std::numeric_limits<float>::max();

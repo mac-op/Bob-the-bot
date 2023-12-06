@@ -4,7 +4,7 @@ import random
 os.chdir("build/bin")
 
 MAPS = ["CactusValleyLE.SC2Map", "BelShirVestigeLE.SC2Map", "ProximaStationLE.SC2Map"]
-DIFFICULTIES = ["Medium", "MediumHard", "Hard"]
+DIFFICULTIES = ["Medium", "MediumHard", "Hard", "HardVeryHard"]
 RACES = ["terran", "protoss", "zerg"]
 N = 20
 
